@@ -11,6 +11,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const BASE = process.env.BASE_URL ?? "http://127.0.0.1:43137";
+// Credenciales de un usuario con rol administrador (por omisión, las del seed).
+const ADMIN_USER = process.env.E2E_USER ?? "demo";
+const ADMIN_PASSWORD = process.env.E2E_PASSWORD ?? "demo123";
 const results = [];
 let failures = 0;
 
@@ -44,6 +47,35 @@ page.on("console", (message) => {
 });
 page.on("pageerror", (error) => consoleErrors.push(String(error)));
 
+async function iniciarSesion(usuario, contrasena) {
+  await page.goto(`${BASE}/login`);
+  await page.locator("#username").fill(usuario);
+  await page.locator("#password").fill(contrasena);
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await page.waitForURL(`${BASE}/`);
+}
+
+async function cerrarSesion() {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await page.goto(`${BASE}/`);
+  await page.getByRole("button", { name: "Salir" }).click();
+  await page.waitForURL(/\/login/);
+}
+
+/** Espera a que aparezca un texto (por ejemplo, el aviso de una acción de servidor). */
+async function esperaTexto(patron) {
+  try {
+    await page.getByText(patron).first().waitFor({ state: "visible", timeout: 5000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function confirmarEliminacion() {
+  await page.getByRole("alertdialog").getByRole("button", { name: "Eliminar" }).click();
+}
+
 async function textoEstable(selector) {
   const locator = page.locator(selector);
   await locator.waitFor();
@@ -64,11 +96,7 @@ async function saveDownload(action) {
 
 try {
   // 1. Login
-  await page.goto(`${BASE}/login`);
-  await page.locator("#username").fill("demo");
-  await page.locator("#password").fill("demo123");
-  await page.getByRole("button", { name: "Entrar" }).click();
-  await page.waitForURL(`${BASE}/`);
+  await iniciarSesion(ADMIN_USER, ADMIN_PASSWORD);
   check(
     "1. Login y pantalla de inicio",
     await page.getByText("Pendientes del último día").isVisible(),
@@ -94,14 +122,17 @@ try {
   await page.locator("#hospital-company").click();
   await page.getByRole("option", { name: EMPRESA }).click();
   await page.locator("#hospital-name").fill(HOSPITAL);
+  await page.locator("#hospital-state").click();
+  await page.getByRole("option", { name: "Sinaloa", exact: true }).click();
   await page.locator("#hospital-price").fill("100");
   await page.getByRole("button", { name: "Guardar" }).click();
   await page.getByRole("cell", { name: HOSPITAL, exact: true }).waitFor();
   const filaHospital = page.getByRole("row", { name: HOSPITAL });
+  const textoHospital = (await filaHospital.textContent()) ?? "";
   check(
-    "3. Crear hospital con precio $100.00",
-    (await filaHospital.textContent())?.includes("$100.00") ?? false,
-    await filaHospital.textContent(),
+    "3. Crear hospital con estado Sinaloa y precio $100.00",
+    textoHospital.includes("$100.00") && textoHospital.includes("Sinaloa"),
+    textoHospital.replace(/\s+/g, " "),
   );
 
   // 4. Crear usuario
@@ -113,10 +144,17 @@ try {
   await page.getByRole("button", { name: "Nuevo usuario" }).click();
   await page.locator("#user-name").fill(`Ana Test ${sufijo}`);
   await page.locator("#user-username").fill(USUARIO);
+  await page.locator("#user-role").click();
+  await page.getByRole("option", { name: "Capturista" }).click();
   await page.locator("#user-password").fill("test1234");
   await page.getByRole("button", { name: "Guardar" }).click();
   await page.getByRole("cell", { name: `Ana Test ${sufijo}` }).waitFor();
-  check("4b. Crear usuario capturista", true);
+  const filaUsuario = page.getByRole("row", { name: `Ana Test ${sufijo}` });
+  check(
+    "4b. Crear usuario con rol capturista",
+    ((await filaUsuario.textContent()) ?? "").includes("Capturista"),
+    await filaUsuario.textContent(),
+  );
 
   // 5. Captura con cálculos
   const hospitalId = await page.evaluate(async (base) => {
@@ -371,14 +409,78 @@ try {
     await page.getByRole("link", { name: "Configuración" }).isVisible(),
   );
 
-  // 20. Cierre de sesión y protección de rutas
+  // 20. La pantalla de login ya no muestra el acceso de demostración
+  await cerrarSesion();
+  const htmlLogin = (await page.locator("body").textContent()) ?? "";
+  check(
+    "20. El login no expone credenciales de demostración",
+    !/demo123|Acceso de demostración/i.test(htmlLogin),
+    htmlLogin.replace(/\s+/g, " ").slice(0, 160),
+  );
+
+  // 21. Un capturista no puede editar ni eliminar en configuración
+  await iniciarSesion(USUARIO, "test1234");
+  await page.goto(`${BASE}/configuracion`);
+  check(
+    "21a. El capturista ve el aviso de permisos",
+    await page.getByText("editar y eliminar está reservado").isVisible(),
+  );
+  check(
+    "21b. El capturista no tiene botones de editar ni eliminar",
+    (await page.getByRole("button", { name: "Editar" }).count()) === 0 &&
+      (await page.getByRole("button", { name: "Eliminar" }).count()) === 0,
+  );
+  check(
+    "21c. La barra superior muestra el rol",
+    (await page.locator("header").textContent())?.includes("Capturista") ?? false,
+  );
+  await cerrarSesion();
+
+  // 22. El administrador sí puede eliminar, con las protecciones del negocio
+  await iniciarSesion(ADMIN_USER, ADMIN_PASSWORD);
+  await page.goto(`${BASE}/configuracion`);
+  check(
+    "22a. La barra superior muestra el rol de administrador",
+    (await page.locator("header").textContent())?.includes("Administrador") ?? false,
+  );
+
+  await page.getByRole("tab", { name: "Usuarios" }).click();
+  await page
+    .getByRole("row", { name: `Ana Test ${sufijo}` })
+    .getByRole("button", { name: "Eliminar" })
+    .click();
+  await confirmarEliminacion();
+  await page.getByRole("row", { name: `Ana Test ${sufijo}` }).waitFor({ state: "detached" });
+  check("22b. El administrador elimina un usuario", true);
+
+  await page.getByRole("tab", { name: "Hospitales" }).click();
+  await page
+    .getByRole("row", { name: HOSPITAL })
+    .getByRole("button", { name: "Eliminar" })
+    .click();
+  await confirmarEliminacion();
+  check(
+    "22c. No se elimina un hospital con capturas en su historial",
+    await esperaTexto(/No se puede eliminar: el hospital tiene/),
+  );
+
+  await page.getByRole("tab", { name: "Empresas" }).click();
+  await page
+    .getByRole("row", { name: EMPRESA })
+    .getByRole("button", { name: "Eliminar" })
+    .click();
+  await confirmarEliminacion();
+  check(
+    "22d. No se elimina una empresa con hospitales",
+    await esperaTexto(/No se puede eliminar: la empresa tiene/),
+  );
+
+  // 23. Cierre de sesión y protección de rutas
   await page.setViewportSize({ width: 1400, height: 900 });
-  await page.goto(`${BASE}/`);
-  await page.getByRole("button", { name: "Salir" }).click();
-  await page.waitForURL(/\/login/);
+  await cerrarSesion();
   await page.goto(`${BASE}/reportes`);
   check(
-    "20. Sin sesión, las rutas privadas redirigen al login",
+    "23. Sin sesión, las rutas privadas redirigen al login",
     page.url().includes("/login"),
     page.url(),
   );
@@ -387,7 +489,7 @@ try {
     (error) => !/favicon|Download the React DevTools/i.test(error),
   );
   check(
-    "21. Sin errores de consola durante el flujo",
+    "24. Sin errores de consola durante el flujo",
     erroresRelevantes.length === 0,
     erroresRelevantes.slice(0, 3).join(" | "),
   );
