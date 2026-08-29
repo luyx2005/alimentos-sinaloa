@@ -62,6 +62,15 @@ async function cerrarSesion() {
   await page.waitForURL(/\/login/);
 }
 
+async function esperaVisible(localizador) {
+  try {
+    await localizador.first().waitFor({ state: "visible", timeout: 5000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Espera a que aparezca un texto (por ejemplo, el aviso de una acción de servidor). */
 async function esperaTexto(patron) {
   try {
@@ -138,8 +147,8 @@ try {
   // 4. Crear usuario
   await page.getByRole("tab", { name: "Usuarios" }).click();
   check(
-    "4a. La pestaña Usuarios muestra el capturista demo",
-    await page.getByRole("cell", { name: "demo", exact: true }).isVisible(),
+    "4a. La pestaña Usuarios lista las cuentas existentes",
+    await esperaVisible(page.getByRole("cell", { name: ADMIN_USER, exact: true })),
   );
   await page.getByRole("button", { name: "Nuevo usuario" }).click();
   await page.locator("#user-name").fill(`Ana Test ${sufijo}`);
@@ -406,7 +415,8 @@ try {
   await page.getByRole("button", { name: "Menú" }).click();
   check(
     "19b. El menú móvil abre la navegación",
-    await page.getByRole("link", { name: "Configuración" }).isVisible(),
+    (await page.getByRole("link", { name: "Configuración" }).isVisible()) &&
+      (await page.getByRole("link", { name: "Pendientes" }).first().isVisible()),
   );
 
   // 20. La pantalla de login ya no muestra el acceso de demostración
@@ -418,21 +428,35 @@ try {
     htmlLogin.replace(/\s+/g, " ").slice(0, 160),
   );
 
-  // 21. Un capturista no puede editar ni eliminar en configuración
+  // 21. El capturista solo trabaja con capturas
   await iniciarSesion(USUARIO, "test1234");
   await page.goto(`${BASE}/configuracion`);
   check(
-    "21a. El capturista ve el aviso de permisos",
-    await page.getByText("editar y eliminar está reservado").isVisible(),
+    "21a. Configuración redirige al capturista al inicio",
+    new URL(page.url()).pathname === "/",
+    page.url(),
+  );
+  await page.goto(`${BASE}/reportes?tipo=empresa&empresa=1`);
+  check(
+    "21b. Reportes redirige al capturista al inicio",
+    new URL(page.url()).pathname === "/",
+    page.url(),
+  );
+  const navegacionCapturista = (await page.locator("header").textContent()) ?? "";
+  check(
+    "21c. La navegación del capturista no ofrece reportes ni configuración",
+    !/Reportes|Configuración/.test(navegacionCapturista) &&
+      /Captura/.test(navegacionCapturista),
+    navegacionCapturista.replace(/\s+/g, " "),
   );
   check(
-    "21b. El capturista no tiene botones de editar ni eliminar",
-    (await page.getByRole("button", { name: "Editar" }).count()) === 0 &&
-      (await page.getByRole("button", { name: "Eliminar" }).count()) === 0,
+    "21d. El capturista sí puede capturar y ver pendientes",
+    (await page.getByRole("link", { name: "Nueva captura" }).isVisible()) &&
+      (await page.getByRole("link", { name: "Ver pendientes" }).isVisible()),
   );
   check(
-    "21c. La barra superior muestra el rol",
-    (await page.locator("header").textContent())?.includes("Capturista") ?? false,
+    "21e. La barra superior muestra el rol",
+    navegacionCapturista.includes("Capturista"),
   );
   await cerrarSesion();
 
@@ -444,6 +468,24 @@ try {
     (await page.locator("header").textContent())?.includes("Administrador") ?? false,
   );
 
+  const nombresHospital = () =>
+    page.getByRole("tabpanel").locator("tbody tr td:first-child").allTextContents();
+  await page.getByRole("tab", { name: "Hospitales" }).click();
+  const ascendente = await nombresHospital();
+  await page
+    .getByRole("tabpanel")
+    .getByRole("columnheader")
+    .first()
+    .getByRole("button")
+    .click();
+  const descendente = await nombresHospital();
+  check(
+    "22b. Las columnas ordenan de forma ascendente y descendente",
+    ascendente.length > 1 &&
+      JSON.stringify(descendente) === JSON.stringify([...ascendente].reverse()),
+    `${ascendente.slice(0, 3).join(", ")} | ${descendente.slice(0, 3).join(", ")}`,
+  );
+
   await page.getByRole("tab", { name: "Usuarios" }).click();
   await page
     .getByRole("row", { name: `Ana Test ${sufijo}` })
@@ -451,7 +493,7 @@ try {
     .click();
   await confirmarEliminacion();
   await page.getByRole("row", { name: `Ana Test ${sufijo}` }).waitFor({ state: "detached" });
-  check("22b. El administrador elimina un usuario", true);
+  check("22c. El administrador elimina un usuario", true);
 
   await page.getByRole("tab", { name: "Hospitales" }).click();
   await page
@@ -460,7 +502,7 @@ try {
     .click();
   await confirmarEliminacion();
   check(
-    "22c. No se elimina un hospital con capturas en su historial",
+    "22d. No se elimina un hospital con capturas en su historial",
     await esperaTexto(/No se puede eliminar: el hospital tiene/),
   );
 
@@ -471,7 +513,7 @@ try {
     .click();
   await confirmarEliminacion();
   check(
-    "22d. No se elimina una empresa con hospitales",
+    "22e. No se elimina una empresa con hospitales",
     await esperaTexto(/No se puede eliminar: la empresa tiene/),
   );
 

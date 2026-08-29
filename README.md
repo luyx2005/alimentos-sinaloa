@@ -30,9 +30,10 @@ a Excel y PDF.
 - Las capturas se pueden modificar y eliminar. La eliminación es **lógica**
   (`active = false`); los registros eliminados no aparecen en los reportes.
 - Se puede capturar cualquier fecha de servicio: el sistema no bloquea fechas.
-- Hay dos roles: **capturista** y **administrador**. Ambos capturan y consultan reportes;
-  solo los administradores pueden **editar y eliminar** en Configuración. Siempre debe
-  quedar al menos un administrador activo.
+- Hay dos roles: **capturista** y **administrador**. El capturista solo ve Inicio, Captura
+  y Pendientes; Reportes y Configuración son exclusivos de los administradores, tanto en la
+  navegación como al entrar por URL directa. Siempre debe quedar al menos un administrador
+  activo.
 - Empresas, hospitales y usuarios se pueden eliminar de forma definitiva, con estas
   protecciones: no se borra una empresa que todavía tiene hospitales, ni un hospital con
   capturas en su historial (para eso está desactivarlo), ni el usuario con el que estás
@@ -133,8 +134,8 @@ quincenales, con cambios de mes y años bisiestos.
 `npm run test:e2e` recorre el flujo completo en Chrome con Playwright: login, alta de
 empresa, hospital y usuario, captura con cálculos, captura en ceros, duplicado, edición,
 conservación del precio histórico, eliminación lógica, pendientes, los cinco reportes,
-descarga de Excel y PDF, permisos del rol capturista, borrado con sus protecciones, vista
-móvil y cierre de sesión. Requiere el servidor corriendo (`BASE_URL`, por omisión
+descarga de Excel y PDF, alcance del rol capturista, ordenamiento de columnas, borrado con
+sus protecciones, vista móvil y cierre de sesión. Requiere el servidor corriendo (`BASE_URL`, por omisión
 `http://127.0.0.1:43137`) y credenciales de un administrador (`E2E_USER` y `E2E_PASSWORD`,
 por omisión las del seed). **Crea datos de prueba en la base**, así que conviene
 ejecutarlo contra una base desechable.
@@ -176,7 +177,8 @@ src/
 - **Reportes**: cinco reportes con filtros y botones de Exportar Excel / Exportar PDF. El
   Excel del reporte por empresa trae tres hojas: Resumen, Detalle y Pendientes.
 - **Configuración**: alta, edición y activación/desactivación de empresas, hospitales
-  (con su estado y precio) y usuarios. Editar y eliminar requiere rol de administrador.
+  (con su estado y precio) y usuarios. Toda la sección requiere rol de administrador y
+  cada columna se puede ordenar de forma ascendente o descendente desde su encabezado.
 
 ## Seguridad
 
