@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 const LINKS = [
   { href: "/", label: "Inicio", icon: Home, adminOnly: false },
   { href: "/captura", label: "Captura", icon: ClipboardList, adminOnly: false },
-  { href: "/pendientes", label: "Pendientes", icon: CircleAlert, adminOnly: false },
+  { href: "/no-completados", label: "No completados", icon: CircleAlert, adminOnly: false },
   { href: "/reportes", label: "Reportes", icon: BarChart3, adminOnly: true },
   { href: "/configuracion", label: "Configuración", icon: Settings, adminOnly: true },
 ] as const;

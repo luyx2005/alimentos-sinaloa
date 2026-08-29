@@ -262,7 +262,7 @@ export default async function ConfiguracionPage() {
               <div>
                 <CardTitle className="text-base">Usuarios</CardTitle>
                 <CardDescription>
-                  Los capturistas solo ven Inicio, Captura y Pendientes; reportes y
+                  Los capturistas solo ven Inicio, Captura y No completados; reportes y
                   configuración son de administradores.
                 </CardDescription>
               </div>

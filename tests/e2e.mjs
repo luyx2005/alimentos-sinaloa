@@ -85,17 +85,6 @@ async function confirmarEliminacion() {
   await page.getByRole("alertdialog").getByRole("button", { name: "Eliminar" }).click();
 }
 
-async function textoEstable(selector) {
-  const locator = page.locator(selector);
-  await locator.waitFor();
-  for (let intento = 0; intento < 20; intento++) {
-    const texto = ((await locator.textContent()) ?? "").trim();
-    if (texto) return texto;
-    await page.waitForTimeout(150);
-  }
-  return "";
-}
-
 async function saveDownload(action) {
   const [download] = await Promise.all([page.waitForEvent("download"), action()]);
   const name = download.suggestedFilename();
@@ -108,7 +97,7 @@ try {
   await iniciarSesion(ADMIN_USER, ADMIN_PASSWORD);
   check(
     "1. Login y pantalla de inicio",
-    await page.getByText("Pendientes del último día").isVisible(),
+    await page.getByText("No completados del último día").isVisible(),
   );
 
   // 2. Crear empresa
@@ -179,9 +168,9 @@ try {
   await page.getByRole("option", { name: EMPRESA }).click();
   await page.getByRole("row", { name: HOSPITAL }).waitFor();
   check(
-    "5b. Hospital Prueba aparece pendiente",
+    "5b. Hospital Prueba aparece sin captura",
     (await page.getByRole("row", { name: HOSPITAL }).textContent())?.includes(
-      "Pendiente",
+      "Sin captura",
     ) ?? false,
   );
 
@@ -191,11 +180,13 @@ try {
 
   await page.locator("#breakfastPatients").fill("10");
   await page.locator("#breakfastStaff").fill("5");
+  await page.locator("#breakfastSnack").fill("3");
   await page.locator("#lunchPatients").fill("20");
   await page.locator("#lunchStaff").fill("5");
+  await page.locator("#lunchSnack").fill("2");
   await page.locator("#dinnerPatients").fill("10");
   await page.locator("#dinnerStaff").fill("0");
-  await page.locator("#snackQuantity").fill("5");
+  await page.locator("#dinnerSnack").fill("0");
 
   const resumen = page.getByText("Resumen").locator("xpath=ancestor::div[@data-slot='card']");
   const textoResumen = (await resumen.textContent()) ?? "";
@@ -215,17 +206,19 @@ try {
     ) ?? false,
   );
 
-  // 6. Cero no es pendiente
+  // 6. Cero no es falta de captura
   const idHospitalPrueba = capturaUrl.match(/\/captura\/(\d+)/)[1];
   await page.goto(`${BASE}/captura/${idHospitalPrueba}?fecha=2026-08-21`);
   for (const campo of [
     "breakfastPatients",
     "breakfastStaff",
+    "breakfastSnack",
     "lunchPatients",
     "lunchStaff",
+    "lunchSnack",
     "dinnerPatients",
     "dinnerStaff",
-    "snackQuantity",
+    "dinnerSnack",
   ]) {
     await page.locator(`#${campo}`).fill("0");
   }
@@ -248,12 +241,12 @@ try {
   );
 
   // 8. Modificación
-  await page.locator("#snackQuantity").fill("15");
+  await page.locator("#breakfastSnack").fill("13");
   await page.waitForTimeout(1200);
   check(
     "8a. El valor capturado se mantiene (sin recargas que lo descarten)",
-    (await page.locator("#snackQuantity").inputValue()) === "15",
-    `valor actual: ${await page.locator("#snackQuantity").inputValue()}`,
+    (await page.locator("#breakfastSnack").inputValue()) === "13",
+    `valor actual: ${await page.locator("#breakfastSnack").inputValue()}`,
   );
   await page.getByRole("button", { name: "Guardar cambios" }).click();
   await page.waitForURL(/\/captura\?fecha=2026-08-20/);
@@ -300,19 +293,19 @@ try {
   const filaEliminada = page.getByRole("row", { name: HOSPITAL });
   await filaEliminada.waitFor();
   check(
-    "10b. Tras eliminar vuelve a Pendiente",
-    ((await filaEliminada.textContent()) ?? "").includes("Pendiente"),
+    "10b. Tras eliminar vuelve a Sin captura",
+    ((await filaEliminada.textContent()) ?? "").includes("Sin captura"),
     await filaEliminada.textContent(),
   );
 
-  // 11. Pantalla de pendientes
-  await page.goto(`${BASE}/pendientes?fecha=2026-08-21`);
+  // 11. Pantalla de no completados
+  await page.goto(`${BASE}/no-completados?fecha=2026-08-21`);
   const filaPendiente = page.getByRole("row", { name: HOSPITAL });
   await filaPendiente.waitFor();
   const textoPendiente = (await filaPendiente.textContent()) ?? "";
   check(
-    "11. Pendientes indica qué información falta",
-    textoPendiente.includes("Desayuno, Comida, Cena, Colación"),
+    "11. No completados indica qué información falta",
+    textoPendiente.includes("Desayuno, Comida, Cena"),
     textoPendiente.replace(/\s+/g, " "),
   );
 
@@ -356,13 +349,18 @@ try {
 
   // 15. Reporte por empresa (semanal) + Excel
   await page.goto(`${BASE}/reportes?tipo=empresa&empresa=1`);
-  const periodoSemanal = await textoEstable("#filter-periodo");
-  const tablaEmpresa = (await page.locator("table").first().textContent()) ?? "";
+  await page.locator("#filter-periodo").click();
+  const opcionSemanal = page.getByRole("option").first();
+  const periodoSemanal = (await opcionSemanal.textContent()) ?? "";
   check(
     "15a. Empresa semanal muestra periodos de lunes a domingo",
     /Semana del/.test(periodoSemanal),
     periodoSemanal,
   );
+  await opcionSemanal.click();
+  await page.waitForURL(/periodo=/);
+  await page.locator("table").first().waitFor();
+  const tablaEmpresa = (await page.locator("table").first().textContent()) ?? "";
   check(
     "15b. El reporte por empresa incluye la fila TOTAL EMPRESA",
     tablaEmpresa.includes("TOTAL EMPRESA"),
@@ -378,7 +376,9 @@ try {
 
   // 16. Empresa quincenal
   await page.goto(`${BASE}/reportes?tipo=empresa&empresa=2`);
-  const periodoQuincenal = await textoEstable("#filter-periodo");
+  await page.locator("#filter-periodo").click();
+  const periodoQuincenal = (await page.getByRole("option").first().textContent()) ?? "";
+  await page.keyboard.press("Escape");
   check(
     "16. Empresa quincenal muestra quincenas",
     /al \d+ de \w+ de \d{4}/.test(periodoQuincenal) && !/Semana del/.test(periodoQuincenal),
@@ -396,10 +396,24 @@ try {
     "17b. Reporte por servicio",
     (await page.locator("table").first().textContent())?.includes("TOTAL") ?? false,
   );
-  await page.goto(`${BASE}/reportes?tipo=pendientes&desde=2026-08-01&hasta=2026-08-31`);
+  await page.goto(
+    `${BASE}/reportes?tipo=no-completados&desde=2026-08-01&hasta=2026-08-31`,
+  );
   check(
-    "18. Reporte de pendientes",
-    (await page.getByText("Pendientes del periodo").isVisible()) ?? false,
+    "18. Reporte de no completados",
+    (await page.getByText("No completados del periodo").isVisible()) ?? false,
+  );
+
+  // 18b. Al entrar a reportes no hay filtros preseleccionados
+  await page.goto(`${BASE}/reportes`);
+  const sinFiltros = (await page.locator("main").textContent()) ?? "";
+  check(
+    "18b. Reportes abre sin filtros y sin reporte generado",
+    sinFiltros.includes("Elige los filtros para generar el reporte") &&
+      (await page.locator("table").count()) === 0 &&
+      (await page.locator("#filter-desde").inputValue()) === "" &&
+      (await page.locator("#filter-hasta").inputValue()) === "",
+    sinFiltros.replace(/\s+/g, " ").slice(0, 200),
   );
 
   // 19. Responsive
@@ -416,7 +430,7 @@ try {
   check(
     "19b. El menú móvil abre la navegación",
     (await page.getByRole("link", { name: "Configuración" }).isVisible()) &&
-      (await page.getByRole("link", { name: "Pendientes" }).first().isVisible()),
+      (await page.getByRole("link", { name: "No completados" }).first().isVisible()),
   );
 
   // 20. La pantalla de login ya no muestra el acceso de demostración
@@ -450,9 +464,9 @@ try {
     navegacionCapturista.replace(/\s+/g, " "),
   );
   check(
-    "21d. El capturista sí puede capturar y ver pendientes",
+    "21d. El capturista sí puede capturar y ver los no completados",
     (await page.getByRole("link", { name: "Nueva captura" }).isVisible()) &&
-      (await page.getByRole("link", { name: "Ver pendientes" }).isVisible()),
+      (await page.getByRole("link", { name: "Ver no completados" }).isVisible()),
   );
   check(
     "21e. La barra superior muestra el rol",

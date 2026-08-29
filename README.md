@@ -19,19 +19,21 @@ a Excel y PDF.
 
 - Cada hospital pertenece a una sola empresa, se ubica en un estado de la República
   Mexicana y tiene su propio precio, en pesos mexicanos.
-- El mismo precio aplica a desayuno, comida, cena y colación, sin importar si es paciente
-  o personal.
-- La **colación es independiente**: no se suma a pacientes ni a personal, pero sí al total
-  servido y por lo tanto al importe.
+- El mismo precio aplica a todo lo servido, sin importar si es paciente, personal o
+  colación.
+- La **colación se captura dentro de cada servicio** (desayuno, comida y cena), junto a
+  pacientes y personal: no es un servicio aparte. No se suma a pacientes ni a personal,
+  pero sí al total de su servicio y por lo tanto al importe.
 - Un solo registro activo por hospital + fecha de servicio (índice único parcial en
   PostgreSQL, más validación en la aplicación).
 - **Cero es un valor válido**: "no capturado" (campo vacío) y "0" son cosas distintas. Un
-  registro está completo cuando tiene datos de desayuno, comida, cena y colación.
+  registro está completo cuando desayuno, comida y cena tienen sus tres cantidades
+  (pacientes, personal y colación).
 - Las capturas se pueden modificar y eliminar. La eliminación es **lógica**
   (`active = false`); los registros eliminados no aparecen en los reportes.
 - Se puede capturar cualquier fecha de servicio: el sistema no bloquea fechas.
 - Hay dos roles: **capturista** y **administrador**. El capturista solo ve Inicio, Captura
-  y Pendientes; Reportes y Configuración son exclusivos de los administradores, tanto en la
+  y No completados; Reportes y Configuración son exclusivos de los administradores, tanto en la
   navegación como al entrar por URL directa. Siempre debe quedar al menos un administrador
   activo.
 - Empresas, hospitales y usuarios se pueden eliminar de forma definitiva, con estas
@@ -42,14 +44,14 @@ a Excel y PDF.
 ### Cálculos
 
 ```
-desayuno total      = desayuno_pacientes + desayuno_personal
-comida total        = comida_pacientes   + comida_personal
-cena total          = cena_pacientes     + cena_personal
-servicios principales = desayuno + comida + cena
-total pacientes     = desayuno_pacientes + comida_pacientes + cena_pacientes
-total personal      = desayuno_personal  + comida_personal  + cena_personal
-total servido       = servicios principales + colación
-importe             = total servido * precio_aplicado
+desayuno total  = desayuno_pacientes + desayuno_personal + desayuno_colación
+comida total    = comida_pacientes   + comida_personal   + comida_colación
+cena total      = cena_pacientes     + cena_personal     + cena_colación
+total pacientes = desayuno_pacientes + comida_pacientes  + cena_pacientes
+total personal  = desayuno_personal  + comida_personal   + cena_personal
+total colaciones = desayuno_colación + comida_colación   + cena_colación
+total servido   = desayuno total + comida total + cena total
+importe         = total servido * precio_aplicado
 ```
 
 ## Stack
@@ -128,12 +130,12 @@ cambiarle la contraseña y dar de alta al resto del equipo con el rol que corres
 ### Pruebas
 
 `npm test` verifica los cálculos (incluido que la colación no se sume a pacientes ni a
-personal y que cero no signifique pendiente) y el cálculo de periodos semanales y
+personal y que cero no signifique falta de captura) y el cálculo de periodos semanales y
 quincenales, con cambios de mes y años bisiestos.
 
 `npm run test:e2e` recorre el flujo completo en Chrome con Playwright: login, alta de
 empresa, hospital y usuario, captura con cálculos, captura en ceros, duplicado, edición,
-conservación del precio histórico, eliminación lógica, pendientes, los cinco reportes,
+conservación del precio histórico, eliminación lógica, no completados, los cinco reportes,
 descarga de Excel y PDF, alcance del rol capturista, ordenamiento de columnas, borrado con
 sus protecciones, vista móvil y cierre de sesión. Requiere el servidor corriendo (`BASE_URL`, por omisión
 `http://127.0.0.1:43137`) y credenciales de un administrador (`E2E_USER` y `E2E_PASSWORD`,
@@ -151,10 +153,10 @@ src/
   app/
     login/             Pantalla de acceso
     (app)/             Rutas protegidas
-      page.tsx         Inicio: accesos rápidos y pendientes del último día
+      page.tsx         Inicio: accesos rápidos y no completados del último día
       captura/         Lista por fecha/empresa y formulario de captura
-      pendientes/      Hospitales sin captura completa
-      reportes/        Hospital, empresa, pacientes vs personal, servicio, pendientes
+      no-completados/  Hospitales sin captura completa
+      reportes/        Hospital, empresa, pacientes vs personal, servicio, no completados
       configuracion/   Empresas, hospitales y usuarios
   components/          UI compartida (shadcn/ui en components/ui)
   lib/
@@ -168,14 +170,16 @@ src/
 
 ## Pantallas
 
-- **Inicio**: accesos rápidos (nueva captura, pendientes, reportes, configuración) y una
-  tarjeta con los pendientes del último día.
+- **Inicio**: accesos rápidos (nueva captura, no completados, reportes, configuración) y
+  una tarjeta con los no completados del último día.
 - **Captura**: fecha de servicio + empresa, lista de hospitales activos con su estado, y
   un formulario optimizado para captura rápida con el resumen calculado en vivo.
-- **Pendientes**: por fecha y empresa, distinguiendo "sin captura" de "incompleto" e
+- **No completados**: por fecha y empresa, distinguiendo "sin captura" de "incompleto" e
   indicando qué servicios faltan.
 - **Reportes**: cinco reportes con filtros y botones de Exportar Excel / Exportar PDF. El
-  Excel del reporte por empresa trae tres hojas: Resumen, Detalle y Pendientes.
+  Excel del reporte por empresa trae tres hojas: Resumen, Detalle y No completados. Al
+  entrar a Reportes no hay ningún filtro preseleccionado: el reporte se genera cuando
+  eliges empresa, hospital y fechas.
 - **Configuración**: alta, edición y activación/desactivación de empresas, hospitales
   (con su estado y precio) y usuarios. Toda la sección requiere rol de administrador y
   cada columna se puede ordenar de forma ascendente o descendente desde su encabezado.

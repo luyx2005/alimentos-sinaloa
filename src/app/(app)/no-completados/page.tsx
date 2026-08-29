@@ -25,9 +25,9 @@ import { hospitalStatusesForDate, listCompanies } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
-export default async function PendientesPage({
+export default async function NoCompletadosPage({
   searchParams,
-}: PageProps<"/pendientes">) {
+}: PageProps<"/no-completados">) {
   const params = await searchParams;
   const companies = await listCompanies(true);
 
@@ -38,12 +38,12 @@ export default async function PendientesPage({
   const companyId = companies.find((c) => c.id === empresaParam)?.id;
 
   const statuses = await hospitalStatusesForDate({ companyId, serviceDate: fecha });
-  const pending = statuses.filter((item) => item.status !== "completo");
+  const incomplete = statuses.filter((item) => item.status !== "completo");
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Pendientes</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">No completados</h1>
         <p className="text-muted-foreground">
           Hospitales que todavía no tienen captura completa para la fecha seleccionada.
         </p>
@@ -71,7 +71,7 @@ export default async function PendientesPage({
             />
             <div className="flex items-center gap-2 text-sm text-muted-foreground sm:ml-auto sm:pb-2">
               <CircleAlert className="size-4" />
-              {pending.length} pendientes de {statuses.length} hospitales
+              {incomplete.length} no completados de {statuses.length} hospitales
             </div>
           </div>
         </CardContent>
@@ -81,8 +81,8 @@ export default async function PendientesPage({
         <CardHeader>
           <CardTitle className="text-base">Detalle</CardTitle>
           <CardDescription>
-            &quot;Pendiente&quot; significa que no existe captura; &quot;Incompleto&quot;
-            que faltan servicios por capturar.
+            &quot;Sin captura&quot; significa que no existe registro de ese día;
+            &quot;Incompleto&quot; que faltan servicios por capturar.
           </CardDescription>
         </CardHeader>
         <CardContent>

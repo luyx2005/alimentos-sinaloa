@@ -34,12 +34,12 @@ export async function ReportPending({
   const rows = await buildPendingReport({ companyId, from, to });
 
   const payload: ExportPayload = {
-    fileName: `pendientes-${from}-${to}`,
-    title: "Reporte de pendientes",
+    fileName: `no-completados-${from}-${to}`,
+    title: "Reporte de no completados",
     subtitle: `Del ${from} al ${to}`,
     sheets: [
       {
-        name: "Pendientes",
+        name: "No completados",
         columns: ["Fecha", "Empresa", "Hospital", "Estado", "Información faltante"],
         widths: [12, 18, 20, 14, 34],
         rows: rows.map((row) => [
@@ -52,7 +52,7 @@ export async function ReportPending({
       },
     ],
     pdf: {
-      summary: [{ label: "Pendientes", value: String(rows.length) }],
+      summary: [{ label: "No completados", value: String(rows.length) }],
       sections: [
         {
           columns: ["Fecha", "Empresa", "Hospital", "Estado", "Falta"],
@@ -72,7 +72,7 @@ export async function ReportPending({
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <CardTitle className="text-base">Pendientes del periodo</CardTitle>
+          <CardTitle className="text-base">No completados del periodo</CardTitle>
           <CardDescription>
             Hospitales sin captura completa entre el {from} y el {to}.
           </CardDescription>
@@ -82,7 +82,7 @@ export async function ReportPending({
       <CardContent>
         {rows.length === 0 ? (
           <p className="text-sm text-emerald-700 dark:text-emerald-400">
-            No hay pendientes: todos los hospitales tienen su captura completa.
+            No hay faltantes: todos los hospitales tienen su captura completa.
           </p>
         ) : (
           <div className="overflow-x-auto">

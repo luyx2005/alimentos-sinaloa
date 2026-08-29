@@ -28,7 +28,7 @@ function revalidateAll() {
   revalidatePath("/configuracion");
   revalidatePath("/captura");
   revalidatePath("/reportes");
-  revalidatePath("/pendientes");
+  revalidatePath("/no-completados");
   revalidatePath("/");
 }
 

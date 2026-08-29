@@ -32,8 +32,8 @@ const QUICK_ACTIONS = [
     adminOnly: false,
   },
   {
-    href: "/pendientes",
-    title: "Ver pendientes",
+    href: "/no-completados",
+    title: "Ver no completados",
     description: "Hospitales sin captura completa por fecha.",
     icon: CircleAlert,
     adminOnly: false,
@@ -60,7 +60,7 @@ export default async function HomePage() {
   const quickActions = QUICK_ACTIONS.filter((action) => isAdmin || !action.adminOnly);
   const lastDay = addDaysISO(todayISO(), -1);
   const statuses = await hospitalStatusesForDate({ serviceDate: lastDay });
-  const pending = statuses.filter((item) => item.status !== "completo");
+  const incomplete = statuses.filter((item) => item.status !== "completo");
 
   return (
     <div className="flex flex-col gap-8">
@@ -98,7 +98,7 @@ export default async function HomePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <CalendarClock className="size-4 text-muted-foreground" />
-            Pendientes del último día
+            No completados del último día
           </CardTitle>
           <CardDescription className="capitalize">
             {formatLongDate(parseISODate(lastDay))}
@@ -111,17 +111,17 @@ export default async function HomePage() {
                 ? "Todavía no hay hospitales activos. Agrégalos desde Configuración."
                 : "Todavía no hay hospitales activos. Pide a un administrador que los dé de alta."}
             </p>
-          ) : pending.length === 0 ? (
+          ) : incomplete.length === 0 ? (
             <p className="text-sm text-emerald-700 dark:text-emerald-400">
               Todos los hospitales tienen su captura completa de ese día.
             </p>
           ) : (
             <div className="flex flex-col gap-3">
               <p className="text-sm text-muted-foreground">
-                {pending.length} de {statuses.length} hospitales sin captura completa.
+                {incomplete.length} de {statuses.length} hospitales sin captura completa.
               </p>
               <ul className="divide-y rounded-lg border">
-                {pending.slice(0, 5).map((item) => (
+                {incomplete.slice(0, 5).map((item) => (
                   <li
                     key={item.hospital.id}
                     className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
@@ -138,8 +138,8 @@ export default async function HomePage() {
               </ul>
               <div>
                 <Button asChild variant="outline" size="sm">
-                  <Link href={`/pendientes?fecha=${lastDay}`}>
-                    Ver todos los pendientes
+                  <Link href={`/no-completados?fecha=${lastDay}`}>
+                    Ver todos los no completados
                     <ArrowRight className="size-4" />
                   </Link>
                 </Button>
