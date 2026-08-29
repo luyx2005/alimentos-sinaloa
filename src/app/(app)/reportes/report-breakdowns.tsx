@@ -97,7 +97,8 @@ export async function ReportPatientsStaff({
         <div>
           <CardTitle className="text-base">Pacientes vs personal</CardTitle>
           <CardDescription>
-            La colación se muestra aparte porque no se divide entre pacientes y personal.
+            Las colaciones se muestran aparte porque no se dividen entre pacientes y
+            personal.
           </CardDescription>
         </div>
         <ExportButtons payload={payload} disabled={rows.length === 0} />
@@ -106,7 +107,7 @@ export async function ReportPatientsStaff({
         <div className="mb-6 grid gap-4 sm:grid-cols-3">
           <Metric label="Pacientes" value={formatNumber(totals.patients)} />
           <Metric label="Personal" value={formatNumber(totals.staff)} />
-          <Metric label="Total (incluye colación)" value={formatNumber(totals.total)} />
+          <Metric label="Total (incluye colaciones)" value={formatNumber(totals.total)} />
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -185,25 +186,17 @@ export async function ReportService({
     sheets: [
       {
         name: "Por servicio",
-        columns: ["Hospital", "Desayuno", "Comida", "Cena", "Colación", "Total"],
-        widths: [22, 12, 12, 12, 12, 12],
+        columns: ["Hospital", "Desayuno", "Comida", "Cena", "Total"],
+        widths: [22, 14, 14, 14, 14],
         rows: [
           ...rows.map((row) => [
             row.hospital.name,
             row.breakfast,
             row.lunch,
             row.dinner,
-            row.snack,
             row.total,
           ]),
-          [
-            "TOTAL",
-            totals.breakfast,
-            totals.lunch,
-            totals.dinner,
-            totals.snack,
-            totals.total,
-          ],
+          ["TOTAL", totals.breakfast, totals.lunch, totals.dinner, totals.total],
         ],
       },
     ],
@@ -212,28 +205,20 @@ export async function ReportService({
         { label: "Desayuno", value: formatNumber(totals.breakfast) },
         { label: "Comida", value: formatNumber(totals.lunch) },
         { label: "Cena", value: formatNumber(totals.dinner) },
-        { label: "Colación", value: formatNumber(totals.snack) },
+        { label: "Total", value: formatNumber(totals.total) },
       ],
       sections: [
         {
-          columns: ["Hospital", "Desayuno", "Comida", "Cena", "Colación", "Total"],
+          columns: ["Hospital", "Desayuno", "Comida", "Cena", "Total"],
           rows: [
             ...rows.map((row) => [
               row.hospital.name,
               row.breakfast,
               row.lunch,
               row.dinner,
-              row.snack,
               row.total,
             ]),
-            [
-              "TOTAL",
-              totals.breakfast,
-              totals.lunch,
-              totals.dinner,
-              totals.snack,
-              totals.total,
-            ],
+            ["TOTAL", totals.breakfast, totals.lunch, totals.dinner, totals.total],
           ],
         },
       ],
@@ -246,7 +231,8 @@ export async function ReportService({
         <div>
           <CardTitle className="text-base">Cantidades por servicio</CardTitle>
           <CardDescription>
-            Desayuno, comida, cena y colación por hospital en el periodo.
+            Desayuno, comida y cena por hospital en el periodo. Cada servicio incluye la
+            colación que se sirvió con él.
           </CardDescription>
         </div>
         <ExportButtons payload={payload} disabled={rows.length === 0} />
@@ -256,7 +242,7 @@ export async function ReportService({
           <Metric label="Desayuno" value={formatNumber(totals.breakfast)} />
           <Metric label="Comida" value={formatNumber(totals.lunch)} />
           <Metric label="Cena" value={formatNumber(totals.dinner)} />
-          <Metric label="Colación" value={formatNumber(totals.snack)} />
+          <Metric label="Total" value={formatNumber(totals.total)} />
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -266,7 +252,6 @@ export async function ReportService({
                 <TableHead className="text-right">Desayuno</TableHead>
                 <TableHead className="text-right">Comida</TableHead>
                 <TableHead className="text-right">Cena</TableHead>
-                <TableHead className="text-right">Colación</TableHead>
                 <TableHead className="text-right">Total</TableHead>
               </TableRow>
             </TableHeader>
@@ -282,9 +267,6 @@ export async function ReportService({
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {formatNumber(row.dinner)}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatNumber(row.snack)}
                   </TableCell>
                   <TableCell className="text-right font-medium tabular-nums">
                     {formatNumber(row.total)}
@@ -303,9 +285,6 @@ export async function ReportService({
                 </TableCell>
                 <TableCell className="text-right font-semibold tabular-nums">
                   {formatNumber(totals.dinner)}
-                </TableCell>
-                <TableCell className="text-right font-semibold tabular-nums">
-                  {formatNumber(totals.snack)}
                 </TableCell>
                 <TableCell className="text-right font-semibold tabular-nums">
                   {formatNumber(totals.total)}

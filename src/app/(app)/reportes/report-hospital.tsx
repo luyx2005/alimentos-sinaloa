@@ -56,9 +56,9 @@ export async function ReportHospital({
           "Desayuno",
           "Comida",
           "Cena",
-          "Colación",
           "Pacientes",
           "Personal",
+          "Colaciones",
           "Total servido",
           "Precio",
           "Importe",
@@ -69,9 +69,9 @@ export async function ReportHospital({
             row.totals.breakfastTotal,
             row.totals.lunchTotal,
             row.totals.dinnerTotal,
-            row.totals.snack,
             row.totals.totalPatients,
             row.totals.totalStaff,
+            row.totals.snack,
             row.totals.totalServed,
             row.appliedPrice,
             row.totals.amount,
@@ -81,9 +81,9 @@ export async function ReportHospital({
             totals.breakfastTotal,
             totals.lunchTotal,
             totals.dinnerTotal,
-            totals.snack,
             totals.totalPatients,
             totals.totalStaff,
+            totals.snack,
             totals.totalServed,
             "",
             totals.amount,
@@ -96,6 +96,7 @@ export async function ReportHospital({
         { label: "Total servido", value: formatNumber(totals.totalServed) },
         { label: "Pacientes", value: formatNumber(totals.totalPatients) },
         { label: "Personal", value: formatNumber(totals.totalStaff) },
+        { label: "Colaciones", value: formatNumber(totals.snack) },
         { label: "Importe", value: formatCurrency(totals.amount) },
       ],
       sections: [
@@ -105,9 +106,9 @@ export async function ReportHospital({
             "Desayuno",
             "Comida",
             "Cena",
-            "Colación",
             "Pacientes",
             "Personal",
+            "Colaciones",
             "Total",
             "Precio",
             "Importe",
@@ -118,9 +119,9 @@ export async function ReportHospital({
               row.totals.breakfastTotal,
               row.totals.lunchTotal,
               row.totals.dinnerTotal,
-              row.totals.snack,
               row.totals.totalPatients,
               row.totals.totalStaff,
+              row.totals.snack,
               row.totals.totalServed,
               formatCurrency(row.appliedPrice),
               formatCurrency(row.totals.amount),
@@ -130,9 +131,9 @@ export async function ReportHospital({
               totals.breakfastTotal,
               totals.lunchTotal,
               totals.dinnerTotal,
-              totals.snack,
               totals.totalPatients,
               totals.totalStaff,
+              totals.snack,
               totals.totalServed,
               "",
               formatCurrency(totals.amount),
@@ -169,9 +170,9 @@ export async function ReportHospital({
                   <TableHead className="text-right">Desayuno</TableHead>
                   <TableHead className="text-right">Comida</TableHead>
                   <TableHead className="text-right">Cena</TableHead>
-                  <TableHead className="text-right">Colación</TableHead>
                   <TableHead className="text-right">Pacientes</TableHead>
                   <TableHead className="text-right">Personal</TableHead>
+                  <TableHead className="text-right">Colaciones</TableHead>
                   <TableHead className="text-right">Total servido</TableHead>
                   <TableHead className="text-right">Precio</TableHead>
                   <TableHead className="text-right">Importe</TableHead>
@@ -193,13 +194,13 @@ export async function ReportHospital({
                       {formatNumber(row.totals.dinnerTotal)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {formatNumber(row.totals.snack)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
                       {formatNumber(row.totals.totalPatients)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatNumber(row.totals.totalStaff)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatNumber(row.totals.snack)}
                     </TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
                       {formatNumber(row.totals.totalServed)}
@@ -226,13 +227,13 @@ export async function ReportHospital({
                     {formatNumber(totals.dinnerTotal)}
                   </TableCell>
                   <TableCell className="text-right font-semibold tabular-nums">
-                    {formatNumber(totals.snack)}
-                  </TableCell>
-                  <TableCell className="text-right font-semibold tabular-nums">
                     {formatNumber(totals.totalPatients)}
                   </TableCell>
                   <TableCell className="text-right font-semibold tabular-nums">
                     {formatNumber(totals.totalStaff)}
+                  </TableCell>
+                  <TableCell className="text-right font-semibold tabular-nums">
+                    {formatNumber(totals.snack)}
                   </TableCell>
                   <TableCell className="text-right font-semibold tabular-nums">
                     {formatNumber(totals.totalServed)}

@@ -59,10 +59,10 @@ export async function ReportCompany({
           "Periodo",
           "Pacientes",
           "Personal",
+          "Colaciones",
           "Desayunos",
           "Comidas",
           "Cenas",
-          "Colaciones",
           "Total",
           "Precio",
           "Importe",
@@ -75,10 +75,10 @@ export async function ReportCompany({
             periodText,
             row.totals.totalPatients,
             row.totals.totalStaff,
+            row.totals.snack,
             row.totals.breakfastTotal,
             row.totals.lunchTotal,
             row.totals.dinnerTotal,
-            row.totals.snack,
             row.totals.totalServed,
             row.appliedPrice === null ? "Varios" : row.appliedPrice,
             row.totals.amount,
@@ -89,10 +89,10 @@ export async function ReportCompany({
             periodText,
             totals.totalPatients,
             totals.totalStaff,
+            totals.snack,
             totals.breakfastTotal,
             totals.lunchTotal,
             totals.dinnerTotal,
-            totals.snack,
             totals.totalServed,
             "",
             totals.amount,
@@ -106,37 +106,43 @@ export async function ReportCompany({
           "Hospital",
           "Desayuno pacientes",
           "Desayuno personal",
+          "Desayuno colación",
           "Comida pacientes",
           "Comida personal",
+          "Comida colación",
           "Cena pacientes",
           "Cena personal",
-          "Colación",
+          "Cena colación",
           "Total pacientes",
           "Total personal",
+          "Total colaciones",
           "Total servido",
           "Precio aplicado",
           "Importe",
         ],
-        widths: [12, 20, 18, 18, 18, 18, 16, 16, 12, 15, 15, 14, 15, 14],
+        widths: [12, 20, 18, 18, 18, 18, 18, 18, 16, 16, 16, 15, 15, 16, 14, 15, 14],
         rows: records.map((record) => [
           record.serviceDate,
           record.hospitalName,
           record.breakfastPatients ?? "",
           record.breakfastStaff ?? "",
+          record.breakfastSnack ?? "",
           record.lunchPatients ?? "",
           record.lunchStaff ?? "",
+          record.lunchSnack ?? "",
           record.dinnerPatients ?? "",
           record.dinnerStaff ?? "",
-          record.snackQuantity ?? "",
+          record.dinnerSnack ?? "",
           record.totals.totalPatients,
           record.totals.totalStaff,
+          record.totals.snack,
           record.totals.totalServed,
           record.appliedPrice,
           record.totals.amount,
         ]),
       },
       {
-        name: "Pendientes",
+        name: "No completados",
         columns: ["Fecha", "Hospital", "Estado", "Información faltante"],
         widths: [12, 20, 14, 34],
         rows: pending.map((row) => [
@@ -160,10 +166,10 @@ export async function ReportCompany({
             "Hospital",
             "Pacientes",
             "Personal",
+            "Colaciones",
             "Desayunos",
             "Comidas",
             "Cenas",
-            "Colaciones",
             "Total",
             "Precio",
             "Importe",
@@ -173,10 +179,10 @@ export async function ReportCompany({
               row.hospital.name,
               row.totals.totalPatients,
               row.totals.totalStaff,
+              row.totals.snack,
               row.totals.breakfastTotal,
               row.totals.lunchTotal,
               row.totals.dinnerTotal,
-              row.totals.snack,
               row.totals.totalServed,
               row.appliedPrice === null
                 ? "Varios"
@@ -187,10 +193,10 @@ export async function ReportCompany({
               "TOTAL EMPRESA",
               totals.totalPatients,
               totals.totalStaff,
+              totals.snack,
               totals.breakfastTotal,
               totals.lunchTotal,
               totals.dinnerTotal,
-              totals.snack,
               totals.totalServed,
               "",
               formatCurrency(totals.amount),
@@ -208,7 +214,7 @@ export async function ReportCompany({
           <CardTitle className="text-base">{company.name}</CardTitle>
           <CardDescription>
             {period.label} · {period.startDate} al {period.endDate} ·{" "}
-            {pending.length} pendientes en el periodo
+            {pending.length} días no completados en el periodo
           </CardDescription>
         </div>
         <ExportButtons payload={payload} disabled={records.length === 0} />
@@ -226,10 +232,10 @@ export async function ReportCompany({
                   <TableHead>Hospital</TableHead>
                   <TableHead className="text-right">Pacientes</TableHead>
                   <TableHead className="text-right">Personal</TableHead>
+                  <TableHead className="text-right">Colaciones</TableHead>
                   <TableHead className="text-right">Desayunos</TableHead>
                   <TableHead className="text-right">Comidas</TableHead>
                   <TableHead className="text-right">Cenas</TableHead>
-                  <TableHead className="text-right">Colaciones</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Precio</TableHead>
                   <TableHead className="text-right">Importe</TableHead>
@@ -249,6 +255,9 @@ export async function ReportCompany({
                       {formatNumber(row.totals.totalStaff)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
+                      {formatNumber(row.totals.snack)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
                       {formatNumber(row.totals.breakfastTotal)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
@@ -256,9 +265,6 @@ export async function ReportCompany({
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatNumber(row.totals.dinnerTotal)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatNumber(row.totals.snack)}
                     </TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
                       {formatNumber(row.totals.totalServed)}
@@ -284,6 +290,9 @@ export async function ReportCompany({
                     {formatNumber(totals.totalStaff)}
                   </TableCell>
                   <TableCell className="text-right font-semibold tabular-nums">
+                    {formatNumber(totals.snack)}
+                  </TableCell>
+                  <TableCell className="text-right font-semibold tabular-nums">
                     {formatNumber(totals.breakfastTotal)}
                   </TableCell>
                   <TableCell className="text-right font-semibold tabular-nums">
@@ -291,9 +300,6 @@ export async function ReportCompany({
                   </TableCell>
                   <TableCell className="text-right font-semibold tabular-nums">
                     {formatNumber(totals.dinnerTotal)}
-                  </TableCell>
-                  <TableCell className="text-right font-semibold tabular-nums">
-                    {formatNumber(totals.snack)}
                   </TableCell>
                   <TableCell className="text-right font-semibold tabular-nums">
                     {formatNumber(totals.totalServed)}
