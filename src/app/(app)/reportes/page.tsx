@@ -11,7 +11,7 @@ import {
 import { requireAdminSession } from "@/lib/auth";
 import { isISODate, todayISO } from "@/lib/dates";
 import { listCompanies, listHospitals } from "@/lib/data";
-import { getPeriodForDate, listRecentPeriods } from "@/lib/periods";
+import { listRecentPeriods } from "@/lib/periods";
 import { cn } from "@/lib/utils";
 import { ReportCompany } from "@/app/(app)/reportes/report-company";
 import { ReportHospital } from "@/app/(app)/reportes/report-hospital";
@@ -28,10 +28,23 @@ const TABS = [
   { key: "empresa", label: "Por empresa" },
   { key: "pacientes", label: "Pacientes vs personal" },
   { key: "servicio", label: "Por servicio" },
-  { key: "pendientes", label: "Pendientes" },
+  { key: "no-completados", label: "No completados" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
+
+function MissingFilters({ items }: { items: string[] }) {
+  return (
+    <Card>
+      <CardContent className="py-10 text-center">
+        <p className="text-sm font-medium">Elige los filtros para generar el reporte</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Falta seleccionar: {items.join(", ")}.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default async function ReportesPage({ searchParams }: PageProps<"/reportes">) {
   await requireAdminSession();
@@ -39,32 +52,23 @@ export default async function ReportesPage({ searchParams }: PageProps<"/reporte
   const params = await searchParams;
   const tipo = (TABS.find((tab) => tab.key === params.tipo)?.key ?? "hospital") as TabKey;
 
+  // Nada viene preseleccionado: los reportes se generan cuando el usuario elige.
   const companies = await listCompanies();
   const empresaParam = Number(params.empresa ?? 0);
-  const company =
-    companies.find((c) => c.id === empresaParam) ??
-    companies.find((c) => c.active) ??
-    companies[0];
+  const company = companies.find((item) => item.id === empresaParam);
 
-  const hospitals = company
-    ? await listHospitals({ companyId: company.id })
-    : [];
+  const hospitals = company ? await listHospitals({ companyId: company.id }) : [];
   const hospitalParam = Number(params.hospital ?? 0);
-  const hospital =
-    hospitals.find((h) => h.id === hospitalParam) ??
-    (tipo === "hospital" ? hospitals[0] : undefined);
+  const hospital = hospitals.find((item) => item.id === hospitalParam);
 
   const today = todayISO();
   const periods = company ? listRecentPeriods(company, today, 12) : [];
   const periodParam = String(params.periodo ?? "");
-  const period =
-    periods.find((item) => item.startDate === periodParam) ??
-    (company ? getPeriodForDate(company, today) : undefined);
+  const period = periods.find((item) => item.startDate === periodParam);
 
-  const defaultFrom = period?.startDate ?? today;
-  const defaultTo = period?.endDate ?? today;
-  const desde = isISODate(params.desde as string) ? (params.desde as string) : defaultFrom;
-  const hasta = isISODate(params.hasta as string) ? (params.hasta as string) : defaultTo;
+  const desde = isISODate(params.desde as string) ? (params.desde as string) : "";
+  const hasta = isISODate(params.hasta as string) ? (params.hasta as string) : "";
+  const rango = desde && hasta;
 
   const companyOptions = companies.map((item) => ({
     value: String(item.id),
@@ -78,18 +82,15 @@ export default async function ReportesPage({ searchParams }: PageProps<"/reporte
   const buildTabHref = (key: TabKey) => {
     const query = new URLSearchParams();
     query.set("tipo", key);
-    // El reporte de pendientes admite "todas las empresas", así que no se fuerza el filtro.
-    if (company && (key !== "pendientes" || empresaParam)) {
-      query.set("empresa", String(company.id));
-    }
-    if (hospital && key !== "empresa" && key !== "pendientes") {
+    if (company) query.set("empresa", String(company.id));
+    if (hospital && key !== "empresa" && key !== "no-completados") {
       query.set("hospital", String(hospital.id));
     }
     if (key === "empresa") {
       if (period) query.set("periodo", period.startDate);
     } else {
-      query.set("desde", desde);
-      query.set("hasta", hasta);
+      if (desde) query.set("desde", desde);
+      if (hasta) query.set("hasta", hasta);
     }
     return `/reportes?${query.toString()}`;
   };
@@ -99,8 +100,8 @@ export default async function ReportesPage({ searchParams }: PageProps<"/reporte
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Reportes</h1>
         <p className="text-muted-foreground">
-          Consulta totales por hospital, por empresa y por servicio, y expórtalos a Excel
-          o PDF.
+          Elige los filtros para consultar totales por hospital, por empresa y por
+          servicio, y expórtalos a Excel o PDF.
         </p>
       </div>
 
@@ -126,27 +127,20 @@ export default async function ReportesPage({ searchParams }: PageProps<"/reporte
           <CardTitle className="text-base">Filtros</CardTitle>
           <CardDescription>
             {tipo === "empresa"
-              ? "El periodo se calcula automáticamente según la periodicidad de la empresa."
-              : "Selecciona el rango de fechas de servicio."}
+              ? "Elige la empresa y el periodo de pago que quieres revisar."
+              : "Elige la empresa y el rango de fechas de servicio."}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
             <QuerySelect
               param="empresa"
-              value={
-                tipo === "pendientes"
-                  ? empresaParam
-                    ? String(empresaParam)
-                    : ""
-                  : company
-                    ? String(company.id)
-                    : ""
-              }
+              value={company ? String(company.id) : ""}
               label="Empresa"
               options={companyOptions}
+              placeholder="Selecciona una empresa"
               resetParams={["hospital", "periodo"]}
-              allLabel={tipo === "pendientes" ? "Todas las empresas" : undefined}
+              allLabel={tipo === "no-completados" ? "Todas las empresas" : undefined}
             />
 
             {tipo === "hospital" || tipo === "pacientes" || tipo === "servicio" ? (
@@ -155,6 +149,9 @@ export default async function ReportesPage({ searchParams }: PageProps<"/reporte
                 value={hospital ? String(hospital.id) : ""}
                 label="Hospital"
                 options={hospitalOptions}
+                placeholder={
+                  company ? "Selecciona un hospital" : "Elige primero la empresa"
+                }
                 allLabel={tipo === "hospital" ? undefined : "Todos los hospitales"}
                 disabled={hospitals.length === 0}
               />
@@ -169,6 +166,10 @@ export default async function ReportesPage({ searchParams }: PageProps<"/reporte
                   value: item.startDate,
                   label: item.label,
                 }))}
+                placeholder={
+                  company ? "Selecciona un periodo" : "Elige primero la empresa"
+                }
+                disabled={periods.length === 0}
                 className="sm:w-auto"
               />
             ) : (
@@ -181,49 +182,63 @@ export default async function ReportesPage({ searchParams }: PageProps<"/reporte
         </CardContent>
       </Card>
 
-      {!company ? (
+      {companies.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-sm text-muted-foreground">
             Crea una empresa en Configuración para generar reportes.
           </CardContent>
         </Card>
       ) : tipo === "hospital" ? (
-        hospital ? (
+        company && hospital && rango ? (
           <ReportHospital hospitalId={hospital.id} from={desde} to={hasta} />
         ) : (
-          <Card>
-            <CardContent className="py-8 text-sm text-muted-foreground">
-              Esta empresa todavía no tiene hospitales.
-            </CardContent>
-          </Card>
+          <MissingFilters
+            items={[
+              ...(company ? [] : ["empresa"]),
+              ...(hospital ? [] : ["hospital"]),
+              ...(rango ? [] : ["rango de fechas"]),
+            ]}
+          />
         )
-      ) : tipo === "empresa" && period ? (
-        <ReportCompany
-          companyId={company.id}
-          from={period.startDate}
-          to={period.endDate}
-          periodLabel={period.label}
-        />
-      ) : tipo === "pacientes" ? (
-        <ReportPatientsStaff
-          companyId={company.id}
-          hospitalId={hospitalParam || undefined}
-          from={desde}
-          to={hasta}
-        />
-      ) : tipo === "servicio" ? (
-        <ReportService
-          companyId={company.id}
-          hospitalId={hospitalParam || undefined}
-          from={desde}
-          to={hasta}
-        />
+      ) : tipo === "empresa" ? (
+        company && period ? (
+          <ReportCompany
+            companyId={company.id}
+            from={period.startDate}
+            to={period.endDate}
+            periodLabel={period.label}
+          />
+        ) : (
+          <MissingFilters
+            items={[...(company ? [] : ["empresa"]), ...(period ? [] : ["periodo"])]}
+          />
+        )
+      ) : tipo === "pacientes" || tipo === "servicio" ? (
+        company && rango ? (
+          tipo === "pacientes" ? (
+            <ReportPatientsStaff
+              companyId={company.id}
+              hospitalId={hospital?.id}
+              from={desde}
+              to={hasta}
+            />
+          ) : (
+            <ReportService
+              companyId={company.id}
+              hospitalId={hospital?.id}
+              from={desde}
+              to={hasta}
+            />
+          )
+        ) : (
+          <MissingFilters
+            items={[...(company ? [] : ["empresa"]), ...(rango ? [] : ["rango de fechas"])]}
+          />
+        )
+      ) : rango ? (
+        <ReportPending companyId={company?.id} from={desde} to={hasta} />
       ) : (
-        <ReportPending
-          companyId={empresaParam || undefined}
-          from={desde}
-          to={hasta}
-        />
+        <MissingFilters items={["rango de fechas"]} />
       )}
     </div>
   );
