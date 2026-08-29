@@ -47,7 +47,7 @@ export async function ReportHospital({
   const payload: ExportPayload = {
     fileName: `reporte-${slug(hospital.name)}-${from}-${to}`,
     title: `Reporte por hospital · ${hospital.name}`,
-    subtitle: `${hospital.companyName} · del ${from} al ${to}`,
+    subtitle: `${hospital.companyName} · ${hospital.state} · del ${from} al ${to}`,
     sheets: [
       {
         name: "Detalle",
@@ -149,7 +149,7 @@ export async function ReportHospital({
         <div>
           <CardTitle className="text-base">{hospital.name}</CardTitle>
           <CardDescription>
-            {hospital.companyName} · {rows.length}{" "}
+            {hospital.companyName} · {hospital.state} · {rows.length}{" "}
             {rows.length === 1 ? "día capturado" : "días capturados"}
           </CardDescription>
         </div>

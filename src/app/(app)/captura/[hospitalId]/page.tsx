@@ -42,7 +42,8 @@ export default async function CapturaHospitalPage({
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">{hospital.name}</h1>
             <p className="capitalize text-muted-foreground">
-              {hospital.companyName} · {formatLongDate(parseISODate(fecha))}
+              {hospital.companyName} · {hospital.state} ·{" "}
+              {formatLongDate(parseISODate(fecha))}
             </p>
           </div>
           <div className="flex items-center gap-3">
