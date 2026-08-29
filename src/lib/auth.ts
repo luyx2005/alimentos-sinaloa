@@ -74,3 +74,10 @@ export async function requireSession(): Promise<SessionUser> {
   if (!session) redirect("/login");
   return session;
 }
+
+/** Para las páginas reservadas a administradores (configuración y reportes). */
+export async function requireAdminSession(): Promise<SessionUser> {
+  const session = await requireSession();
+  if (session.role !== "admin") redirect("/");
+  return session;
+}

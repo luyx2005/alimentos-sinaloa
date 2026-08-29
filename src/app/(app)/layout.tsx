@@ -17,6 +17,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <AppNav
         userName={session.name}
         roleLabel={ROLE_LABELS[session.role]}
+        isAdmin={session.role === "admin"}
         logout={logout}
       />
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:py-8">

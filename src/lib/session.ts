@@ -17,6 +17,16 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   capturista: "Capturista",
 };
 
+/** Secciones reservadas a administradores: el capturista solo trabaja con capturas. */
+export const ADMIN_ONLY_PATHS = ["/reportes", "/configuracion"] as const;
+
+export function canAccessPath(role: UserRole, pathname: string): boolean {
+  if (role === "admin") return true;
+  return !ADMIN_ONLY_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
+}
+
 export function secretKey(): Uint8Array {
   const secret = process.env.AUTH_SECRET;
   if (!secret || secret.length < 16) {

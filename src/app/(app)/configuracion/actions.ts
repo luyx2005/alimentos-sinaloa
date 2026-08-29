@@ -8,9 +8,9 @@ import { prisma } from "@/lib/prisma";
 
 export type ActionResult = { ok: boolean; message?: string };
 
-const SOLO_ADMIN = "Solo los administradores pueden editar o eliminar la configuración.";
+const SOLO_ADMIN = "Solo los administradores pueden modificar la configuración.";
 
-/** Editar, activar/desactivar y eliminar están reservados a administradores. */
+/** Toda la sección de configuración está reservada a administradores. */
 async function denyIfNotAdmin(): Promise<ActionResult | null> {
   const session = await requireSession();
   return session.role === "admin" ? null : { ok: false, message: SOLO_ADMIN };
@@ -33,11 +33,10 @@ function revalidateAll() {
 }
 
 export async function saveCompany(formData: FormData): Promise<ActionResult> {
-  const session = await requireSession();
+  const denied = await denyIfNotAdmin();
+  if (denied) return denied;
 
   const id = Number(formData.get("id") ?? 0);
-  if (id && session.role !== "admin") return { ok: false, message: SOLO_ADMIN };
-
   const name = String(formData.get("name") ?? "").trim();
   const paymentPeriodType = String(formData.get("paymentPeriodType") ?? "");
 
@@ -96,11 +95,10 @@ export async function deleteCompany(formData: FormData): Promise<ActionResult> {
 }
 
 export async function saveHospital(formData: FormData): Promise<ActionResult> {
-  const session = await requireSession();
+  const denied = await denyIfNotAdmin();
+  if (denied) return denied;
 
   const id = Number(formData.get("id") ?? 0);
-  if (id && session.role !== "admin") return { ok: false, message: SOLO_ADMIN };
-
   const companyId = Number(formData.get("companyId") ?? 0);
   const name = String(formData.get("name") ?? "").trim();
   const state = String(formData.get("state") ?? "").trim();
@@ -168,11 +166,11 @@ export async function deleteHospital(formData: FormData): Promise<ActionResult> 
 }
 
 export async function saveUser(formData: FormData): Promise<ActionResult> {
+  const denied = await denyIfNotAdmin();
+  if (denied) return denied;
+
   const session = await requireSession();
-
   const id = Number(formData.get("id") ?? 0);
-  if (id && session.role !== "admin") return { ok: false, message: SOLO_ADMIN };
-
   const name = String(formData.get("name") ?? "").trim();
   const username = String(formData.get("username") ?? "")
     .trim()
@@ -191,7 +189,7 @@ export async function saveUser(formData: FormData): Promise<ActionResult> {
   if (id && password && password.length < 6) {
     return { ok: false, message: "La contraseña debe tener al menos 6 caracteres." };
   }
-  if (role !== "admin" && session.role === "admin" && id === session.id) {
+  if (role !== "admin" && id === session.id) {
     return { ok: false, message: "No puedes quitarte a ti mismo el rol de administrador." };
   }
 

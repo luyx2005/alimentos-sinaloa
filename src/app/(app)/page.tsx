@@ -29,29 +29,35 @@ const QUICK_ACTIONS = [
     title: "Nueva captura",
     description: "Registrar las comidas servidas de un hospital.",
     icon: ClipboardList,
+    adminOnly: false,
   },
   {
     href: "/pendientes",
     title: "Ver pendientes",
     description: "Hospitales sin captura completa por fecha.",
     icon: CircleAlert,
+    adminOnly: false,
   },
   {
     href: "/reportes",
     title: "Reportes",
     description: "Por hospital, por empresa y exportación a Excel.",
     icon: BarChart3,
+    adminOnly: true,
   },
   {
     href: "/configuracion",
     title: "Configuración",
     description: "Empresas, hospitales, precios y usuarios.",
     icon: Settings,
+    adminOnly: true,
   },
 ] as const;
 
 export default async function HomePage() {
   const session = await requireSession();
+  const isAdmin = session.role === "admin";
+  const quickActions = QUICK_ACTIONS.filter((action) => isAdmin || !action.adminOnly);
   const lastDay = addDaysISO(todayISO(), -1);
   const statuses = await hospitalStatusesForDate({ serviceDate: lastDay });
   const pending = statuses.filter((item) => item.status !== "completo");
@@ -63,12 +69,14 @@ export default async function HomePage() {
           Hola, {session.name.split(" ")[0]}
         </h1>
         <p className="text-muted-foreground">
-          Captura las cantidades servidas y consulta los reportes de cada empresa.
+          {isAdmin
+            ? "Captura las cantidades servidas y consulta los reportes de cada empresa."
+            : "Captura las cantidades servidas de cada hospital y revisa qué falta por registrar."}
         </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {QUICK_ACTIONS.map(({ href, title, description, icon: Icon }) => (
+        {quickActions.map(({ href, title, description, icon: Icon }) => (
           <Link key={href} href={href} className="group">
             <Card className="h-full transition-colors group-hover:border-primary/40 group-hover:bg-accent/40">
               <CardHeader>
@@ -99,7 +107,9 @@ export default async function HomePage() {
         <CardContent>
           {statuses.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Todavía no hay hospitales activos. Agrégalos desde Configuración.
+              {isAdmin
+                ? "Todavía no hay hospitales activos. Agrégalos desde Configuración."
+                : "Todavía no hay hospitales activos. Pide a un administrador que los dé de alta."}
             </p>
           ) : pending.length === 0 ? (
             <p className="text-sm text-emerald-700 dark:text-emerald-400">

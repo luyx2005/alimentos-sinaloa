@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
+import { SESSION_COOKIE, canAccessPath, verifySessionToken } from "@/lib/session";
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -17,7 +17,7 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  if (session && isLogin) {
+  if (session && (isLogin || !canAccessPath(session.role, pathname))) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.search = "";

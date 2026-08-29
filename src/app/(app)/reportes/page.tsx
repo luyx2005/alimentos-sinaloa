@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { requireAdminSession } from "@/lib/auth";
 import { isISODate, todayISO } from "@/lib/dates";
 import { listCompanies, listHospitals } from "@/lib/data";
 import { getPeriodForDate, listRecentPeriods } from "@/lib/periods";
@@ -33,6 +34,8 @@ const TABS = [
 type TabKey = (typeof TABS)[number]["key"];
 
 export default async function ReportesPage({ searchParams }: PageProps<"/reportes">) {
+  await requireAdminSession();
+
   const params = await searchParams;
   const tipo = (TABS.find((tab) => tab.key === params.tipo)?.key ?? "hospital") as TabKey;
 

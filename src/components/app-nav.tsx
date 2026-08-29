@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   BarChart3,
+  CircleAlert,
   ClipboardList,
   Home,
   LogOut,
@@ -18,10 +19,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
-  { href: "/", label: "Inicio", icon: Home },
-  { href: "/captura", label: "Captura", icon: ClipboardList },
-  { href: "/reportes", label: "Reportes", icon: BarChart3 },
-  { href: "/configuracion", label: "Configuración", icon: Settings },
+  { href: "/", label: "Inicio", icon: Home, adminOnly: false },
+  { href: "/captura", label: "Captura", icon: ClipboardList, adminOnly: false },
+  { href: "/pendientes", label: "Pendientes", icon: CircleAlert, adminOnly: false },
+  { href: "/reportes", label: "Reportes", icon: BarChart3, adminOnly: true },
+  { href: "/configuracion", label: "Configuración", icon: Settings, adminOnly: true },
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -31,14 +33,17 @@ function isActive(pathname: string, href: string) {
 export function AppNav({
   userName,
   roleLabel,
+  isAdmin,
   logout,
 }: {
   userName: string;
   roleLabel: string;
+  isAdmin: boolean;
   logout: () => Promise<void>;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const links = LINKS.filter((link) => isAdmin || !link.adminOnly);
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
@@ -51,7 +56,7 @@ export function AppNav({
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
-          {LINKS.map(({ href, label, icon: Icon }) => (
+          {links.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
@@ -93,7 +98,7 @@ export function AppNav({
 
       {open ? (
         <nav className="flex flex-col gap-1 border-t px-4 py-2 md:hidden">
-          {LINKS.map(({ href, label, icon: Icon }) => (
+          {links.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
