@@ -107,10 +107,25 @@ contraseña: demo123
 | `npm start`           | Servidor de producción.                     |
 | `npm run lint`        | ESLint.                                     |
 | `npm run typecheck`   | TypeScript sin emitir.                      |
+| `npm test`            | Pruebas de cálculos y de periodos.          |
+| `npm run test:e2e`    | Prueba del flujo completo en el navegador.  |
 | `npm run db:migrate`  | Aplica migraciones en desarrollo.           |
 | `npm run db:deploy`   | Aplica migraciones en producción.           |
 | `npm run db:seed`     | Carga los datos iniciales.                  |
 | `npm run db:studio`   | Prisma Studio.                              |
+
+### Pruebas
+
+`npm test` verifica los cálculos (incluido que la colación no se sume a pacientes ni a
+personal y que cero no signifique pendiente) y el cálculo de periodos semanales y
+quincenales, con cambios de mes y años bisiestos.
+
+`npm run test:e2e` recorre el flujo completo en Chrome con Playwright: login, alta de
+empresa, hospital y usuario, captura con cálculos, captura en ceros, duplicado, edición,
+conservación del precio histórico, eliminación lógica, pendientes, los cinco reportes,
+descarga de Excel y PDF, vista móvil y cierre de sesión. Requiere el servidor corriendo
+(`BASE_URL` apunta a `http://127.0.0.1:43137` por omisión) y **crea datos de prueba en la
+base**, así que conviene ejecutarlo contra una base desechable.
 
 ## Estructura
 
