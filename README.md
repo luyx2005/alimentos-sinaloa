@@ -1,36 +1,159 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Comedores Hospitalarios
 
-## Getting Started
+Aplicación web para controlar las cantidades de alimentos servidos por hospital: captura
+diaria, cálculo automático de importes, reportes por hospital y por empresa, y exportación
+a Excel y PDF.
 
-First, run the development server:
+## Qué resuelve
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Un capturista registra, por **hospital y fecha de servicio**, cuántos desayunos, comidas
+  y cenas se sirvieron (separando **pacientes** y **personal**) y cuántas **colaciones**.
+- El sistema calcula totales e importes usando el precio del hospital.
+- Al guardar una captura se copia el precio vigente del hospital en el registro
+  (`applied_price`), de modo que un cambio de precio posterior **no altera** los importes
+  históricos.
+- Los reportes se agrupan por el periodo de pago de cada empresa: **semanal**
+  (lunes a domingo) o **quincenal** (1–15 y 16 al último día del mes).
+
+## Reglas de negocio implementadas
+
+- Cada hospital pertenece a una sola empresa y tiene su propio precio, en pesos mexicanos.
+- El mismo precio aplica a desayuno, comida, cena y colación, sin importar si es paciente
+  o personal.
+- La **colación es independiente**: no se suma a pacientes ni a personal, pero sí al total
+  servido y por lo tanto al importe.
+- Un solo registro activo por hospital + fecha de servicio (índice único parcial en
+  PostgreSQL, más validación en la aplicación).
+- **Cero es un valor válido**: "no capturado" (campo vacío) y "0" son cosas distintas. Un
+  registro está completo cuando tiene datos de desayuno, comida, cena y colación.
+- Las capturas se pueden modificar y eliminar. La eliminación es **lógica**
+  (`active = false`); los registros eliminados no aparecen en los reportes.
+- Se puede capturar cualquier fecha de servicio: el sistema no bloquea fechas.
+- Todos los usuarios autenticados tienen los mismos permisos.
+
+### Cálculos
+
+```
+desayuno total      = desayuno_pacientes + desayuno_personal
+comida total        = comida_pacientes   + comida_personal
+cena total          = cena_pacientes     + cena_personal
+servicios principales = desayuno + comida + cena
+total pacientes     = desayuno_pacientes + comida_pacientes + cena_pacientes
+total personal      = desayuno_personal  + comida_personal  + cena_personal
+total servido       = servicios principales + colación
+importe             = total servido * precio_aplicado
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Next.js 16 (App Router) + TypeScript
+- Tailwind CSS 4 + shadcn/ui
+- PostgreSQL + Prisma ORM 7 (driver adapter `@prisma/adapter-pg`)
+- Autenticación propia: contraseñas con bcrypt y sesión JWT firmada en cookie httpOnly
+- SheetJS (`xlsx`) para Excel y jsPDF + autoTable para PDF
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Requisitos
 
-## Learn More
+- Node.js 20 o superior
+- PostgreSQL 14 o superior
 
-To learn more about Next.js, take a look at the following resources:
+## Puesta en marcha
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+# 1. Dependencias
+npm install
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# 2. Variables de entorno
+cp .env.example .env
+# edita DATABASE_URL y AUTH_SECRET
 
-## Deploy on Vercel
+# 3. Base de datos: tablas + datos iniciales
+npm run db:migrate
+npm run db:seed
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# 4. Servidor de desarrollo
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+La aplicación queda en `http://localhost:3000` (el script de desarrollo acepta
+`-- --port 43137` si necesitas otro puerto).
+
+### Variables de entorno
+
+| Variable       | Descripción                                                  |
+| -------------- | ------------------------------------------------------------ |
+| `DATABASE_URL` | Cadena de conexión de PostgreSQL.                            |
+| `AUTH_SECRET`  | Cadena aleatoria para firmar las sesiones (mínimo 16 chars). |
+
+### Datos iniciales
+
+El seed crea dos empresas (Empresa A, semanal, con 4 hospitales; Empresa B, quincenal, con
+6 hospitales), precios de ejemplo, capturas de los últimos días para poder ver reportes, y
+un usuario de demostración:
+
+```
+usuario:    demo
+contraseña: demo123
+```
+
+**Cambia estas credenciales antes de usar la aplicación en producción.**
+
+## Scripts
+
+| Script                | Qué hace                                    |
+| --------------------- | ------------------------------------------- |
+| `npm run dev`         | Servidor de desarrollo.                     |
+| `npm run build`       | Build de producción.                        |
+| `npm start`           | Servidor de producción.                     |
+| `npm run lint`        | ESLint.                                     |
+| `npm run typecheck`   | TypeScript sin emitir.                      |
+| `npm run db:migrate`  | Aplica migraciones en desarrollo.           |
+| `npm run db:deploy`   | Aplica migraciones en producción.           |
+| `npm run db:seed`     | Carga los datos iniciales.                  |
+| `npm run db:studio`   | Prisma Studio.                              |
+
+## Estructura
+
+```
+prisma/
+  schema.prisma        Modelos: companies, hospitals, users, daily_records
+  migrations/          SQL versionado (incluye el índice único parcial)
+  seed.ts              Datos iniciales
+src/
+  app/
+    login/             Pantalla de acceso
+    (app)/             Rutas protegidas
+      page.tsx         Inicio: accesos rápidos y pendientes del último día
+      captura/         Lista por fecha/empresa y formulario de captura
+      pendientes/      Hospitales sin captura completa
+      reportes/        Hospital, empresa, pacientes vs personal, servicio, pendientes
+      configuracion/   Empresas, hospitales y usuarios
+  components/          UI compartida (shadcn/ui en components/ui)
+  lib/
+    calc.ts            Cálculos de totales, importes y estado de captura
+    periods.ts         getPeriodForDate: semanal y quincenal
+    data.ts            Consultas y serialización a DTOs
+    reports.ts         Construcción de los reportes
+    auth.ts            Sesión, hash y verificación de credenciales
+  proxy.ts             Protege las rutas privadas
+```
+
+## Pantallas
+
+- **Inicio**: accesos rápidos (nueva captura, pendientes, reportes, configuración) y una
+  tarjeta con los pendientes del último día.
+- **Captura**: fecha de servicio + empresa, lista de hospitales activos con su estado, y
+  un formulario optimizado para captura rápida con el resumen calculado en vivo.
+- **Pendientes**: por fecha y empresa, distinguiendo "sin captura" de "incompleto" e
+  indicando qué servicios faltan.
+- **Reportes**: cinco reportes con filtros y botones de Exportar Excel / Exportar PDF. El
+  Excel del reporte por empresa trae tres hojas: Resumen, Detalle y Pendientes.
+- **Configuración**: alta, edición y activación/desactivación de empresas, hospitales
+  (con su precio) y capturistas.
+
+## Seguridad
+
+- Contraseñas con hash bcrypt; nunca se guardan en texto plano.
+- Sesión firmada (HS256) en cookie `httpOnly`, `sameSite=lax`, y `secure` en producción.
+- Todas las rutas privadas se protegen antes de renderizar, y cada acción de servidor
+  vuelve a verificar la sesión.
