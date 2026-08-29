@@ -1,4 +1,4 @@
-import { Building2, Hospital, Plus, Users } from "lucide-react";
+import { Building2, Hospital, Plus, ShieldCheck, Trash2, Users } from "lucide-react";
 
 import { ActionButton } from "@/components/action-button";
 import { Badge } from "@/components/ui/badge";
@@ -19,9 +19,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ROLE_LABELS, requireSession } from "@/lib/auth";
 import { formatCurrency } from "@/lib/calc";
 import { listCompanies, listHospitals, listUsers } from "@/lib/data";
 import {
+  deleteCompany,
+  deleteHospital,
+  deleteUser,
   toggleCompany,
   toggleHospital,
   toggleUser,
@@ -46,6 +50,9 @@ function ActiveBadge({ active }: { active: boolean }) {
 }
 
 export default async function ConfiguracionPage() {
+  const session = await requireSession();
+  const isAdmin = session.role === "admin";
+
   const [companies, hospitals, users] = await Promise.all([
     listCompanies(),
     listHospitals(),
@@ -57,9 +64,17 @@ export default async function ConfiguracionPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Configuración</h1>
         <p className="text-muted-foreground">
-          Empresas, hospitales con su precio vigente y capturistas.
+          Empresas, hospitales con su precio vigente y usuarios del sistema.
         </p>
       </div>
+
+      {!isAdmin ? (
+        <p className="flex items-start gap-2 rounded-md border bg-card px-3 py-2 text-sm text-muted-foreground">
+          <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+          Tu cuenta es de capturista: puedes consultar la configuración y dar de alta
+          registros, pero editar y eliminar está reservado a los administradores.
+        </p>
+      ) : null}
 
       <Tabs defaultValue="empresas">
         <TabsList>
@@ -131,20 +146,39 @@ export default async function ConfiguracionPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex justify-end gap-2">
-                              <CompanyDialog
-                                company={company}
-                                trigger={
-                                  <Button variant="outline" size="sm">
-                                    Editar
-                                  </Button>
-                                }
-                              />
-                              <ActionButton
-                                action={toggleCompany}
-                                values={{ id: company.id }}
-                              >
-                                {company.active ? "Desactivar" : "Activar"}
-                              </ActionButton>
+                              {isAdmin ? (
+                                <>
+                                  <CompanyDialog
+                                    company={company}
+                                    trigger={
+                                      <Button variant="outline" size="sm">
+                                        Editar
+                                      </Button>
+                                    }
+                                  />
+                                  <ActionButton
+                                    action={toggleCompany}
+                                    values={{ id: company.id }}
+                                  >
+                                    {company.active ? "Desactivar" : "Activar"}
+                                  </ActionButton>
+                                  <ActionButton
+                                    action={deleteCompany}
+                                    values={{ id: company.id }}
+                                    className="text-destructive hover:text-destructive"
+                                    confirmTitle={`¿Eliminar ${company.name}?`}
+                                    confirmDescription="La empresa se borra definitivamente. Solo es posible si ya no tiene hospitales registrados."
+                                    confirmLabel="Eliminar"
+                                  >
+                                    <Trash2 className="size-4" />
+                                    Eliminar
+                                  </ActionButton>
+                                </>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">
+                                  Solo administradores
+                                </span>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -163,7 +197,8 @@ export default async function ConfiguracionPage() {
               <div>
                 <CardTitle className="text-base">Hospitales</CardTitle>
                 <CardDescription>
-                  Cada hospital pertenece a una empresa y tiene su propio precio.
+                  Cada hospital pertenece a una empresa, está en un estado de la
+                  República y tiene su propio precio.
                 </CardDescription>
               </div>
               <HospitalDialog
@@ -183,15 +218,16 @@ export default async function ConfiguracionPage() {
                     <TableRow>
                       <TableHead>Hospital</TableHead>
                       <TableHead>Empresa</TableHead>
-                      <TableHead className="text-right">Precio actual</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Precio actual</TableHead>
+                      <TableHead>Situación</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {hospitals.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-muted-foreground">
+                        <TableCell colSpan={6} className="text-muted-foreground">
                           Todavía no hay hospitales registrados.
                         </TableCell>
                       </TableRow>
@@ -200,6 +236,7 @@ export default async function ConfiguracionPage() {
                         <TableRow key={hospital.id}>
                           <TableCell className="font-medium">{hospital.name}</TableCell>
                           <TableCell>{hospital.companyName}</TableCell>
+                          <TableCell>{hospital.state}</TableCell>
                           <TableCell className="text-right tabular-nums">
                             {formatCurrency(hospital.price)}
                           </TableCell>
@@ -208,21 +245,40 @@ export default async function ConfiguracionPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex justify-end gap-2">
-                              <HospitalDialog
-                                hospital={hospital}
-                                companies={companies}
-                                trigger={
-                                  <Button variant="outline" size="sm">
-                                    Editar
-                                  </Button>
-                                }
-                              />
-                              <ActionButton
-                                action={toggleHospital}
-                                values={{ id: hospital.id }}
-                              >
-                                {hospital.active ? "Desactivar" : "Activar"}
-                              </ActionButton>
+                              {isAdmin ? (
+                                <>
+                                  <HospitalDialog
+                                    hospital={hospital}
+                                    companies={companies}
+                                    trigger={
+                                      <Button variant="outline" size="sm">
+                                        Editar
+                                      </Button>
+                                    }
+                                  />
+                                  <ActionButton
+                                    action={toggleHospital}
+                                    values={{ id: hospital.id }}
+                                  >
+                                    {hospital.active ? "Desactivar" : "Activar"}
+                                  </ActionButton>
+                                  <ActionButton
+                                    action={deleteHospital}
+                                    values={{ id: hospital.id }}
+                                    className="text-destructive hover:text-destructive"
+                                    confirmTitle={`¿Eliminar ${hospital.name}?`}
+                                    confirmDescription="El hospital se borra definitivamente. Solo es posible si no tiene capturas en su historial."
+                                    confirmLabel="Eliminar"
+                                  >
+                                    <Trash2 className="size-4" />
+                                    Eliminar
+                                  </ActionButton>
+                                </>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">
+                                  Solo administradores
+                                </span>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -239,7 +295,7 @@ export default async function ConfiguracionPage() {
           <Card>
             <CardHeader className="flex flex-row items-start justify-between gap-4">
               <div>
-                <CardTitle className="text-base">Capturistas</CardTitle>
+                <CardTitle className="text-base">Usuarios</CardTitle>
                 <CardDescription>
                   Las contraseñas se guardan cifradas con bcrypt.
                 </CardDescription>
@@ -260,6 +316,7 @@ export default async function ConfiguracionPage() {
                     <TableRow>
                       <TableHead>Nombre</TableHead>
                       <TableHead>Usuario</TableHead>
+                      <TableHead>Rol</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
@@ -267,26 +324,64 @@ export default async function ConfiguracionPage() {
                   <TableBody>
                     {users.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell className="font-medium">
+                          {user.name}
+                          {user.id === session.id ? (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              (tú)
+                            </span>
+                          ) : null}
+                        </TableCell>
                         <TableCell className="text-muted-foreground">
                           {user.username}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={user.role === "admin" ? "default" : "outline"}
+                          >
+                            {ROLE_LABELS[user.role]}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <ActiveBadge active={user.active} />
                         </TableCell>
                         <TableCell>
                           <div className="flex justify-end gap-2">
-                            <UserDialog
-                              user={user}
-                              trigger={
-                                <Button variant="outline" size="sm">
-                                  Editar
-                                </Button>
-                              }
-                            />
-                            <ActionButton action={toggleUser} values={{ id: user.id }}>
-                              {user.active ? "Desactivar" : "Activar"}
-                            </ActionButton>
+                            {isAdmin ? (
+                              <>
+                                <UserDialog
+                                  user={user}
+                                  trigger={
+                                    <Button variant="outline" size="sm">
+                                      Editar
+                                    </Button>
+                                  }
+                                />
+                                <ActionButton
+                                  action={toggleUser}
+                                  values={{ id: user.id }}
+                                  disabled={user.id === session.id}
+                                >
+                                  {user.active ? "Desactivar" : "Activar"}
+                                </ActionButton>
+                                <ActionButton
+                                  action={deleteUser}
+                                  values={{ id: user.id }}
+                                  disabled={user.id === session.id}
+                                  className="text-destructive hover:text-destructive"
+                                  confirmTitle={`¿Eliminar a ${user.name}?`}
+                                  confirmDescription="El usuario se borra definitivamente y perderá el acceso al sistema."
+                                  confirmLabel="Eliminar"
+                                >
+                                  <Trash2 className="size-4" />
+                                  Eliminar
+                                </ActionButton>
+                              </>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">
+                                Solo administradores
+                              </span>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>

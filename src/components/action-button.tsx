@@ -24,6 +24,7 @@ export function ActionButton({
   variant = "outline",
   size = "sm",
   className,
+  disabled,
   confirmTitle,
   confirmDescription,
   confirmLabel = "Confirmar",
@@ -34,6 +35,7 @@ export function ActionButton({
   variant?: React.ComponentProps<typeof Button>["variant"];
   size?: React.ComponentProps<typeof Button>["size"];
   className?: string;
+  disabled?: boolean;
   confirmTitle?: string;
   confirmDescription?: string;
   confirmLabel?: string;
@@ -62,7 +64,7 @@ export function ActionButton({
       variant={variant}
       size={size}
       className={className}
-      disabled={pending}
+      disabled={disabled || pending}
       onClick={confirmTitle ? () => setOpen(true) : run}
       type="button"
     >

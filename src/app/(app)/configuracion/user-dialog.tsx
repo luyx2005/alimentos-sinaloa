@@ -16,6 +16,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { UserRole } from "@/lib/auth";
 import type { UserDTO } from "@/lib/data";
 
 export function UserDialog({
@@ -27,10 +35,12 @@ export function UserDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [role, setRole] = useState<UserRole>(user?.role ?? "capturista");
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("role", role);
     startTransition(async () => {
       const result = await saveUser(formData);
       if (result.ok) {
@@ -49,7 +59,8 @@ export function UserDialog({
         <DialogHeader>
           <DialogTitle>{user ? "Editar usuario" : "Nuevo capturista"}</DialogTitle>
           <DialogDescription>
-            Todos los capturistas tienen los mismos permisos.
+            Los capturistas registran y consultan; los administradores además pueden
+            editar y eliminar la configuración.
           </DialogDescription>
         </DialogHeader>
 
@@ -77,6 +88,19 @@ export function UserDialog({
               autoComplete="off"
               required
             />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="user-role">Rol</Label>
+            <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
+              <SelectTrigger id="user-role">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="capturista">Capturista</SelectItem>
+                <SelectItem value="admin">Administrador</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex flex-col gap-2">

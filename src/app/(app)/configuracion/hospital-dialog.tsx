@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { CompanyDTO, HospitalDTO } from "@/lib/data";
+import { DEFAULT_STATE, MEXICAN_STATES } from "@/lib/mexican-states";
 
 export function HospitalDialog({
   hospital,
@@ -39,11 +40,13 @@ export function HospitalDialog({
   const [companyId, setCompanyId] = useState(
     String(hospital?.companyId ?? companies[0]?.id ?? ""),
   );
+  const [state, setState] = useState<string>(hospital?.state ?? DEFAULT_STATE);
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     formData.set("companyId", companyId);
+    formData.set("state", state);
     startTransition(async () => {
       const result = await saveHospital(formData);
       if (result.ok) {
@@ -96,6 +99,22 @@ export function HospitalDialog({
               placeholder="Hospital 1"
               required
             />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="hospital-state">Estado</Label>
+            <Select value={state} onValueChange={setState}>
+              <SelectTrigger id="hospital-state">
+                <SelectValue placeholder="Selecciona un estado" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                {MEXICAN_STATES.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex flex-col gap-2">
