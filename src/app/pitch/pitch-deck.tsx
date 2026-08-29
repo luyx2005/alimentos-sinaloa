@@ -14,17 +14,7 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 
-const SLIDES = [
-  "portada",
-  "proposito",
-  "audiencia",
-  "vision",
-  "problema",
-  "solucion",
-  "contexto",
-  "evidencias",
-  "cta",
-] as const;
+const SLIDES = ["portada", "audiencia", "problema", "solucion", "cta"] as const;
 
 export function PitchDeck() {
   const [index, setIndex] = useState(0);
@@ -77,25 +67,17 @@ export function PitchDeck() {
           className="relative flex aspect-video w-full max-w-6xl cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-[#16241e] shadow-[0_30px_80px_rgba(0,0,0,0.45)] print:hidden"
         >
           {index === 0 ? <Cover /> : null}
-          {index === 1 ? <Purpose /> : null}
-          {index === 2 ? <Audience /> : null}
-          {index === 3 ? <Vision /> : null}
-          {index === 4 ? <Problem /> : null}
-          {index === 5 ? <Solution /> : null}
-          {index === 6 ? <Context /> : null}
-          {index === 7 ? <Evidence /> : null}
-          {index === 8 ? <CallToAction /> : null}
+          {index === 1 ? <Audience /> : null}
+          {index === 2 ? <Problem /> : null}
+          {index === 3 ? <Solution /> : null}
+          {index === 4 ? <CallToAction /> : null}
         </article>
 
         <div className="hidden print:block">
           <Cover />
-          <Purpose />
           <Audience />
-          <Vision />
           <Problem />
           <Solution />
-          <Context />
-          <Evidence />
           <CallToAction />
         </div>
       </main>
@@ -186,24 +168,10 @@ function Cover() {
           respaldada con foto.
         </p>
       </div>
-      <p className="text-sm text-[#8f8674]">9 diapositivas · flechas o clic para avanzar</p>
-    </div>
-  );
-}
-
-function Purpose() {
-  return (
-    <Frame
-      kicker="El propósito"
-      title="Que el cobro de cada hospital se arme con lo que realmente se sirvió ese día."
-    >
-      <p className="max-w-3xl text-lg leading-relaxed text-[#d8d0c0]">
-        La herramienta existe para que un capturista registre, por hospital y fecha,
-        desayunos, comidas y cenas —pacientes, personal y colación— y el sistema convierta
-        esas cantidades en importes, reportes y evidencia, sin rehacer el Excel cada
-        semana o quincena.
+      <p className="text-sm text-[#8f8674]">
+        5 diapositivas · flechas o clic para avanzar
       </p>
-    </Frame>
+    </div>
   );
 }
 
@@ -246,22 +214,6 @@ function AudienceCard({
       <h3 className="mt-3 font-medium">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-[#c4b89a]">{body}</p>
     </li>
-  );
-}
-
-function Vision() {
-  return (
-    <Frame
-      kicker="La visión"
-      title="Un solo registro diario por hospital, imposible de perder y fácil de cobrar."
-    >
-      <p className="max-w-3xl text-lg leading-relaxed text-[#d8d0c0]">
-        Que ninguna ración quede en una hoja suelta. Que un cambio de precio no reescriba
-        el pasado. Que al cerrar la semana o la quincena el reporte ya esté, con foto del
-        reporte firmado, y que se pueda crecer a más empresas y más estados sin cambiar de
-        herramienta.
-      </p>
-    </Frame>
   );
 }
 
@@ -341,60 +293,6 @@ function SolutionItem({
         <p className="mt-1 text-sm leading-relaxed text-[#c4b89a]">{body}</p>
       </div>
     </li>
-  );
-}
-
-function Context() {
-  return (
-    <Frame
-      kicker="El contexto"
-      title="Operación real, no un prototipo de comedor genérico."
-    >
-      <div className="grid gap-6 text-[#d8d0c0] md:grid-cols-2">
-        <p className="text-base leading-relaxed">
-          Alimentos Sinaloa nace de la operación de comedores en hospitales: dos empresas
-          con reglas distintas de cobro, hospitales con precio propio, y un capturista que
-          tiene que dejar el día cerrado antes de irse.
-        </p>
-        <ul className="space-y-2 text-sm">
-          <li>WWPL cobra por semana (lunes a domingo).</li>
-          <li>PERLOT cobra por quincena (1–15 y 16 al último día).</li>
-          <li>El precio es por hospital, en pesos, y aplica a todo lo servido.</li>
-          <li>El capturista no ve reportes ni configuración: solo captura.</li>
-          <li>Se opera desde escritorio o tablet, en español.</li>
-        </ul>
-      </div>
-    </Frame>
-  );
-}
-
-function Evidence() {
-  return (
-    <Frame
-      kicker="Las evidencias"
-      title="Ya está en uso, con el flujo completo, no solo la pantalla bonita."
-    >
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Stat value="2" label="Empresas activas" />
-        <Stat value="10" label="Hospitales" />
-        <Stat value="195" label="Capturas del día" />
-        <Stat value="44" label="Pruebas del flujo" />
-      </div>
-      <p className="mt-8 max-w-3xl text-sm leading-relaxed text-[#c4b89a]">
-        Login con roles, captura con foto, hospitales no completados, reportes por rango
-        libre o por periodo de la empresa, y exportación a Excel y PDF. Lo que se ve en
-        la demostración es lo que ya corre, no una maqueta.
-      </p>
-    </Frame>
-  );
-}
-
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="rounded-xl border border-white/10 p-4">
-      <p className="font-semibold text-3xl text-[#e2c56a] tabular-nums">{value}</p>
-      <p className="mt-1 text-xs tracking-wide text-[#c4b89a] uppercase">{label}</p>
-    </div>
   );
 }
 

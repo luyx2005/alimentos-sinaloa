@@ -203,8 +203,9 @@ src/
 - **Configuración**: alta, edición y activación/desactivación de empresas, hospitales
   (con su estado y precio) y usuarios. Toda la sección requiere rol de administrador y
   cada columna se puede ordenar de forma ascendente o descendente desde su encabezado.
-- **Pitch** (`/pitch`): diapositivas de presentación, públicas, con flechas o clic para
-  avanzar. Desde el navegador se pueden imprimir a PDF.
+- **Pitch** (`/pitch`): cinco diapositivas públicas (portada, a quién va dirigido, problema,
+  solución y llamado a la acción). Flechas o clic para avanzar; desde el navegador se
+  pueden imprimir a PDF.
 
 ## Seguridad
 
