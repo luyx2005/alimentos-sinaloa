@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PaymentPeriodType {
+  weekly
+  biweekly
+}
+
+model Company {
+  id                Int               @id @default(autoincrement())
+  name              String
+  paymentPeriodType PaymentPeriodType @map("payment_period_type")
+  active            Boolean           @default(true)
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  hospitals Hospital[]
+
+  @@map("companies")
+}
+
+model Hospital {
+  id        Int      @id @default(autoincrement())
+  companyId Int      @map("company_id")
+  name      String
+  price     Decimal  @db.Decimal(10, 2)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company     Company       @relation(fields: [companyId], references: [id])
+  dailyRecords DailyRecord[]
+
+  @@index([companyId])
+  @@map("hospitals")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+/// Un registro por hospital + fecha de servicio.
+/// Las cantidades son opcionales para poder distinguir "no capturado" (null) de "cero".
+model DailyRecord {
+  id                Int      @id @default(autoincrement())
+  hospitalId        Int      @map("hospital_id")
+  serviceDate       DateTime @map("service_date") @db.Date
+  breakfastPatients Int?     @map("breakfast_patients")
+  breakfastStaff    Int?     @map("breakfast_staff")
+  lunchPatients     Int?     @map("lunch_patients")
+  lunchStaff        Int?     @map("lunch_staff")
+  dinnerPatients    Int?     @map("dinner_patients")
+  dinnerStaff       Int?     @map("dinner_staff")
+  snackQuantity     Int?     @map("snack_quantity")
+  appliedPrice      Decimal  @map("applied_price") @db.Decimal(10, 2)
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id])
+
+  @@index([hospitalId, serviceDate])
+  @@index([serviceDate])
+  @@map("daily_records")
+}
