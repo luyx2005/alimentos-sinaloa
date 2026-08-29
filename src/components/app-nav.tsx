@@ -30,9 +30,11 @@ function isActive(pathname: string, href: string) {
 
 export function AppNav({
   userName,
+  roleLabel,
   logout,
 }: {
   userName: string;
+  roleLabel: string;
   logout: () => Promise<void>;
 }) {
   const pathname = usePathname();
@@ -45,7 +47,7 @@ export function AppNav({
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <UtensilsCrossed className="size-4" />
           </span>
-          <span className="hidden sm:inline">Comedores</span>
+          <span className="hidden sm:inline">Alimentos Sinaloa</span>
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
@@ -67,13 +69,14 @@ export function AppNav({
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <span className="hidden text-sm text-muted-foreground sm:inline">
-            {userName}
+          <span className="hidden text-right text-sm leading-tight sm:block">
+            <span className="block">{userName}</span>
+            <span className="block text-xs text-muted-foreground">{roleLabel}</span>
           </span>
           <form action={logout}>
             <Button variant="ghost" size="sm" type="submit" title="Cerrar sesión">
               <LogOut className="size-4" />
-              <span className="hidden sm:inline">Salir</span>
+              <span className="sr-only sm:not-sr-only">Salir</span>
             </Button>
           </form>
           <Button

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AppNav } from "@/components/app-nav";
-import { destroySession, requireSession } from "@/lib/auth";
+import { ROLE_LABELS, destroySession, requireSession } from "@/lib/auth";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const session = await requireSession();
@@ -14,12 +14,16 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <AppNav userName={session.name} logout={logout} />
+      <AppNav
+        userName={session.name}
+        roleLabel={ROLE_LABELS[session.role]}
+        logout={logout}
+      />
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:py-8">
         {children}
       </main>
       <footer className="border-t py-4 text-center text-xs text-muted-foreground">
-        Comedores Hospitalarios · Control de alimentos servidos
+        Alimentos Sinaloa · Control de alimentos servidos en comedores hospitalarios
       </footer>
     </div>
   );

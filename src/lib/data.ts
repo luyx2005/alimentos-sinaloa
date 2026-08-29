@@ -10,6 +10,7 @@ import {
   type ServiceKey,
   type Totals,
 } from "@/lib/calc";
+import type { UserRole } from "@/lib/auth";
 import type { PaymentPeriodType } from "@/lib/periods";
 
 export type CompanyDTO = {
@@ -24,6 +25,7 @@ export type HospitalDTO = {
   companyId: number;
   companyName: string;
   name: string;
+  state: string;
   price: number;
   active: boolean;
 };
@@ -32,6 +34,7 @@ export type UserDTO = {
   id: number;
   name: string;
   username: string;
+  role: UserRole;
   active: boolean;
 };
 
@@ -142,6 +145,7 @@ export async function listHospitals(options?: {
     companyId: row.companyId,
     companyName: row.company.name,
     name: row.name,
+    state: row.state,
     price: Number(row.price),
     active: row.active,
   }));
@@ -158,6 +162,7 @@ export async function getHospital(id: number): Promise<HospitalDTO | null> {
     companyId: row.companyId,
     companyName: row.company.name,
     name: row.name,
+    state: row.state,
     price: Number(row.price),
     active: row.active,
   };
@@ -169,6 +174,7 @@ export async function listUsers(): Promise<UserDTO[]> {
     id: row.id,
     name: row.name,
     username: row.username,
+    role: row.role as UserRole,
     active: row.active,
   }));
 }
