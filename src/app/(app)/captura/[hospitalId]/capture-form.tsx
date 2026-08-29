@@ -307,11 +307,7 @@ export function CaptureForm({
                 Obligatorio
               </span>
             </CardTitle>
-            <CardDescription>
-              {blocksSave
-                ? "Adjunta la foto del reporte diario firmado del hospital. Sin ella no se puede guardar la captura."
-                : "Adjunta la foto del reporte diario firmado del hospital. Al cambiarla se reemplaza la anterior."}
-            </CardDescription>
+            <CardDescription>Adjunta la foto del reporte diario firmado</CardDescription>
           </CardHeader>
           <CardContent>
             <PhotoField
