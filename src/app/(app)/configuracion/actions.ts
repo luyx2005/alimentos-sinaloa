@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { hashPassword, requireSession } from "@/lib/auth";
 import { isMexicanState } from "@/lib/mexican-states";
 import { prisma } from "@/lib/prisma";
+import { IMAGE_FIELDS, deleteImage } from "@/lib/uploads";
 
 export type ActionResult = { ok: boolean; message?: string };
 
@@ -150,19 +151,30 @@ export async function deleteHospital(formData: FormData): Promise<ActionResult> 
   const hospital = await prisma.hospital.findUnique({ where: { id } });
   if (!hospital) return { ok: false, message: "Hospital no encontrado." };
 
-  const records = await prisma.dailyRecord.count({ where: { hospitalId: id } });
-  if (records > 0) {
-    return {
-      ok: false,
-      message: `No se puede eliminar: el hospital tiene ${records} ${
-        records === 1 ? "captura" : "capturas"
-      } en su historial. Desactívalo para dejar de usarlo sin perder los importes.`,
-    };
+  // Al eliminar el hospital se borra también su historial y las fotos de esas capturas.
+  const records = await prisma.dailyRecord.findMany({
+    where: { hospitalId: id },
+    select: { breakfastImage: true, lunchImage: true, dinnerImage: true, reportImage: true },
+  });
+
+  await prisma.$transaction([
+    prisma.dailyRecord.deleteMany({ where: { hospitalId: id } }),
+    prisma.hospital.delete({ where: { id } }),
+  ]);
+
+  for (const record of records) {
+    for (const field of IMAGE_FIELDS) await deleteImage(record[field]);
   }
 
-  await prisma.hospital.delete({ where: { id } });
   revalidateAll();
-  return { ok: true, message: "Hospital eliminado." };
+  return {
+    ok: true,
+    message: records.length
+      ? `Hospital eliminado junto con ${records.length} ${
+          records.length === 1 ? "captura" : "capturas"
+        }.`
+      : "Hospital eliminado.",
+  };
 }
 
 export async function saveUser(formData: FormData): Promise<ActionResult> {

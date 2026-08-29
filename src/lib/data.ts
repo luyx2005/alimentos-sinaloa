@@ -29,6 +29,8 @@ export type HospitalDTO = {
   state: string;
   price: number;
   active: boolean;
+  /** Capturas registradas: se pierden si el hospital se elimina. */
+  recordCount: number;
 };
 
 export type UserDTO = {
@@ -156,7 +158,10 @@ export async function listHospitals(options?: {
       ...(options?.companyId ? { companyId: options.companyId } : {}),
       ...(options?.activeOnly ? { active: true } : {}),
     },
-    include: { company: { select: { name: true } } },
+    include: {
+      company: { select: { name: true } },
+      _count: { select: { dailyRecords: true } },
+    },
     orderBy: [{ companyId: "asc" }, { name: "asc" }],
   });
   return rows.map((row) => ({
@@ -167,13 +172,17 @@ export async function listHospitals(options?: {
     state: row.state,
     price: Number(row.price),
     active: row.active,
+    recordCount: row._count.dailyRecords,
   }));
 }
 
 export async function getHospital(id: number): Promise<HospitalDTO | null> {
   const row = await prisma.hospital.findUnique({
     where: { id },
-    include: { company: { select: { name: true } } },
+    include: {
+      company: { select: { name: true } },
+      _count: { select: { dailyRecords: true } },
+    },
   });
   if (!row) return null;
   return {
@@ -184,6 +193,7 @@ export async function getHospital(id: number): Promise<HospitalDTO | null> {
     state: row.state,
     price: Number(row.price),
     active: row.active,
+    recordCount: row._count.dailyRecords,
   };
 }
 

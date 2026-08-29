@@ -562,17 +562,6 @@ try {
   await page.getByRole("row", { name: `Ana Test ${sufijo}` }).waitFor({ state: "detached" });
   check("22c. El administrador elimina un usuario", true);
 
-  await page.getByRole("tab", { name: "Hospitales" }).click();
-  await page
-    .getByRole("row", { name: HOSPITAL })
-    .getByRole("button", { name: "Eliminar" })
-    .click();
-  await confirmarEliminacion();
-  check(
-    "22d. No se elimina un hospital con capturas en su historial",
-    await esperaTexto(/No se puede eliminar: el hospital tiene/),
-  );
-
   await page.getByRole("tab", { name: "Empresas" }).click();
   await page
     .getByRole("row", { name: EMPRESA })
@@ -580,9 +569,37 @@ try {
     .click();
   await confirmarEliminacion();
   check(
-    "22e. No se elimina una empresa con hospitales",
+    "22d. No se elimina una empresa con hospitales",
     await esperaTexto(/No se puede eliminar: la empresa tiene/),
   );
+
+  await page.getByRole("tab", { name: "Hospitales" }).click();
+  await page
+    .getByRole("row", { name: HOSPITAL })
+    .getByRole("button", { name: "Eliminar" })
+    .click();
+  const avisoBorrado = await page.getByRole("alertdialog").innerText();
+  check(
+    "22e. El aviso de borrado dice cuántas capturas se pierden",
+    /junto con sus \d+ capturas/.test(avisoBorrado),
+    avisoBorrado.replace(/\n/g, " "),
+  );
+  await confirmarEliminacion();
+  await page.getByRole("row", { name: HOSPITAL }).waitFor({ state: "detached" });
+  check(
+    "22f. Se elimina un hospital aunque tenga capturas",
+    await esperaTexto(/Hospital eliminado junto con \d+ capturas/),
+  );
+
+  // La empresa ya se quedó sin hospitales: se elimina y la prueba no deja rastro.
+  await page.getByRole("tab", { name: "Empresas" }).click();
+  await page
+    .getByRole("row", { name: EMPRESA })
+    .getByRole("button", { name: "Eliminar" })
+    .click();
+  await confirmarEliminacion();
+  await page.getByRole("row", { name: EMPRESA }).waitFor({ state: "detached" });
+  check("22g. La prueba limpia la empresa que creó", true);
 
   // 23. Cierre de sesión y protección de rutas
   await page.setViewportSize({ width: 1400, height: 900 });

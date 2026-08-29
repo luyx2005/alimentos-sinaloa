@@ -240,7 +240,11 @@ export default async function ConfiguracionPage() {
                             values={{ id: hospital.id }}
                             className="text-destructive hover:text-destructive"
                             confirmTitle={`¿Eliminar ${hospital.name}?`}
-                            confirmDescription="El hospital se borra definitivamente. Solo es posible si no tiene capturas en su historial."
+                            confirmDescription={
+                              hospital.recordCount > 0
+                                ? `El hospital se borra definitivamente junto con sus ${hospital.recordCount} capturas y sus fotos, y dejará de aparecer en los reportes. Si solo quieres dejar de usarlo, desactívalo.`
+                                : "El hospital se borra definitivamente. Si solo quieres dejar de usarlo, desactívalo."
+                            }
                             confirmLabel="Eliminar"
                           >
                             <Trash2 className="size-4" />

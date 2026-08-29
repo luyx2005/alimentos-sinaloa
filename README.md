@@ -41,10 +41,11 @@ a Excel y PDF.
   y No completados; Reportes y Configuración son exclusivos de los administradores, tanto en la
   navegación como al entrar por URL directa. Siempre debe quedar al menos un administrador
   activo.
-- Empresas, hospitales y usuarios se pueden eliminar de forma definitiva, con estas
-  protecciones: no se borra una empresa que todavía tiene hospitales, ni un hospital con
-  capturas en su historial (para eso está desactivarlo), ni el usuario con el que estás
-  trabajando.
+- Empresas, hospitales y usuarios se pueden eliminar de forma definitiva. Al eliminar un
+  hospital se borra también su historial de capturas y las fotos de esas capturas, y el
+  aviso de confirmación dice cuántas se van a perder; si solo quieres dejar de usarlo,
+  desactívalo. No se borra una empresa que todavía tiene hospitales (elimínalos o
+  desactívala) ni el usuario con el que estás trabajando.
 
 ### Cálculos
 
