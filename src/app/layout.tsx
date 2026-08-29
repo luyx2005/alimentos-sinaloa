@@ -10,7 +10,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Comedores Hospitalarios",
+  title: "Alimentos Sinaloa",
   description:
     "Control diario de alimentos servidos por hospital, con reportes por empresa y exportación a Excel y PDF.",
 };

@@ -1,4 +1,4 @@
-# Comedores Hospitalarios
+# Alimentos Sinaloa
 
 Aplicación web para controlar las cantidades de alimentos servidos por hospital: captura
 diaria, cálculo automático de importes, reportes por hospital y por empresa, y exportación
@@ -17,7 +17,8 @@ a Excel y PDF.
 
 ## Reglas de negocio implementadas
 
-- Cada hospital pertenece a una sola empresa y tiene su propio precio, en pesos mexicanos.
+- Cada hospital pertenece a una sola empresa, se ubica en un estado de la República
+  Mexicana y tiene su propio precio, en pesos mexicanos.
 - El mismo precio aplica a desayuno, comida, cena y colación, sin importar si es paciente
   o personal.
 - La **colación es independiente**: no se suma a pacientes ni a personal, pero sí al total
@@ -29,7 +30,13 @@ a Excel y PDF.
 - Las capturas se pueden modificar y eliminar. La eliminación es **lógica**
   (`active = false`); los registros eliminados no aparecen en los reportes.
 - Se puede capturar cualquier fecha de servicio: el sistema no bloquea fechas.
-- Todos los usuarios autenticados tienen los mismos permisos.
+- Hay dos roles: **capturista** y **administrador**. Ambos capturan y consultan reportes;
+  solo los administradores pueden **editar y eliminar** en Configuración. Siempre debe
+  quedar al menos un administrador activo.
+- Empresas, hospitales y usuarios se pueden eliminar de forma definitiva, con estas
+  protecciones: no se borra una empresa que todavía tiene hospitales, ni un hospital con
+  capturas en su historial (para eso está desactivarlo), ni el usuario con el que estás
+  trabajando.
 
 ### Cálculos
 
@@ -49,7 +56,8 @@ importe             = total servido * precio_aplicado
 - Next.js 16 (App Router) + TypeScript
 - Tailwind CSS 4 + shadcn/ui
 - PostgreSQL + Prisma ORM 7 (driver adapter `@prisma/adapter-pg`)
-- Autenticación propia: contraseñas con bcrypt y sesión JWT firmada en cookie httpOnly
+- Autenticación propia: contraseñas con bcrypt, sesión JWT firmada en cookie httpOnly y
+  dos roles (administrador y capturista)
 - SheetJS (`xlsx`) para Excel y jsPDF + autoTable para PDF
 
 ## Requisitos
@@ -88,15 +96,17 @@ La aplicación queda en `http://localhost:3000` (el script de desarrollo acepta
 ### Datos iniciales
 
 El seed crea dos empresas (Empresa A, semanal, con 4 hospitales; Empresa B, quincenal, con
-6 hospitales), precios de ejemplo, capturas de los últimos días para poder ver reportes, y
-un usuario de demostración:
+6 hospitales), sus estados y precios de ejemplo, capturas de los últimos días para poder
+ver reportes, y un usuario **administrador** inicial:
 
 ```
 usuario:    demo
 contraseña: demo123
 ```
 
-**Cambia estas credenciales antes de usar la aplicación en producción.**
+**Cambia estas credenciales en cuanto entres por primera vez.** La pantalla de acceso no
+muestra ninguna credencial: desde Configuración → Usuarios puedes renombrar esa cuenta,
+cambiarle la contraseña y dar de alta al resto del equipo con el rol que corresponda.
 
 ## Scripts
 
@@ -123,9 +133,11 @@ quincenales, con cambios de mes y años bisiestos.
 `npm run test:e2e` recorre el flujo completo en Chrome con Playwright: login, alta de
 empresa, hospital y usuario, captura con cálculos, captura en ceros, duplicado, edición,
 conservación del precio histórico, eliminación lógica, pendientes, los cinco reportes,
-descarga de Excel y PDF, vista móvil y cierre de sesión. Requiere el servidor corriendo
-(`BASE_URL` apunta a `http://127.0.0.1:43137` por omisión) y **crea datos de prueba en la
-base**, así que conviene ejecutarlo contra una base desechable.
+descarga de Excel y PDF, permisos del rol capturista, borrado con sus protecciones, vista
+móvil y cierre de sesión. Requiere el servidor corriendo (`BASE_URL`, por omisión
+`http://127.0.0.1:43137`) y credenciales de un administrador (`E2E_USER` y `E2E_PASSWORD`,
+por omisión las del seed). **Crea datos de prueba en la base**, así que conviene
+ejecutarlo contra una base desechable.
 
 ## Estructura
 
@@ -164,11 +176,12 @@ src/
 - **Reportes**: cinco reportes con filtros y botones de Exportar Excel / Exportar PDF. El
   Excel del reporte por empresa trae tres hojas: Resumen, Detalle y Pendientes.
 - **Configuración**: alta, edición y activación/desactivación de empresas, hospitales
-  (con su precio) y capturistas.
+  (con su estado y precio) y usuarios. Editar y eliminar requiere rol de administrador.
 
 ## Seguridad
 
 - Contraseñas con hash bcrypt; nunca se guardan en texto plano.
 - Sesión firmada (HS256) en cookie `httpOnly`, `sameSite=lax`, y `secure` en producción.
 - Todas las rutas privadas se protegen antes de renderizar, y cada acción de servidor
-  vuelve a verificar la sesión.
+  vuelve a verificar la sesión y el rol; ocultar los botones en la interfaz no es la única
+  defensa.

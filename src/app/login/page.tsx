@@ -15,20 +15,15 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           </div>
           <div>
             <h1 className="text-xl font-semibold tracking-tight">
-              Comedores Hospitalarios
+              Alimentos Sinaloa
             </h1>
             <p className="text-sm text-muted-foreground">
-              Control de alimentos servidos
+              Control de alimentos servidos en comedores hospitalarios
             </p>
           </div>
         </div>
 
         <LoginForm next={next} />
-
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Acceso de demostración: <span className="font-medium">demo</span> /{" "}
-          <span className="font-medium">demo123</span>
-        </p>
       </div>
     </main>
   );
