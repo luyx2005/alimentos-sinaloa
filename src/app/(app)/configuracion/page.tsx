@@ -1,0 +1,303 @@
+import { Building2, Hospital, Plus, Users } from "lucide-react";
+
+import { ActionButton } from "@/components/action-button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatCurrency } from "@/lib/calc";
+import { listCompanies, listHospitals, listUsers } from "@/lib/data";
+import {
+  toggleCompany,
+  toggleHospital,
+  toggleUser,
+} from "@/app/(app)/configuracion/actions";
+import { CompanyDialog } from "@/app/(app)/configuracion/company-dialog";
+import { HospitalDialog } from "@/app/(app)/configuracion/hospital-dialog";
+import { UserDialog } from "@/app/(app)/configuracion/user-dialog";
+
+export const dynamic = "force-dynamic";
+
+const PERIOD_LABELS = {
+  weekly: "Semanal",
+  biweekly: "Quincenal",
+} as const;
+
+function ActiveBadge({ active }: { active: boolean }) {
+  return (
+    <Badge variant={active ? "secondary" : "outline"}>
+      {active ? "Activo" : "Inactivo"}
+    </Badge>
+  );
+}
+
+export default async function ConfiguracionPage() {
+  const [companies, hospitals, users] = await Promise.all([
+    listCompanies(),
+    listHospitals(),
+    listUsers(),
+  ]);
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Configuración</h1>
+        <p className="text-muted-foreground">
+          Empresas, hospitales con su precio vigente y capturistas.
+        </p>
+      </div>
+
+      <Tabs defaultValue="empresas">
+        <TabsList>
+          <TabsTrigger value="empresas">
+            <Building2 className="size-4" />
+            Empresas
+          </TabsTrigger>
+          <TabsTrigger value="hospitales">
+            <Hospital className="size-4" />
+            Hospitales
+          </TabsTrigger>
+          <TabsTrigger value="usuarios">
+            <Users className="size-4" />
+            Usuarios
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="empresas">
+          <Card>
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div>
+                <CardTitle className="text-base">Empresas</CardTitle>
+                <CardDescription>
+                  La periodicidad define el periodo de los reportes por empresa.
+                </CardDescription>
+              </div>
+              <CompanyDialog
+                trigger={
+                  <Button size="sm">
+                    <Plus className="size-4" />
+                    Nueva empresa
+                  </Button>
+                }
+              />
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Empresa</TableHead>
+                      <TableHead>Periodicidad</TableHead>
+                      <TableHead>Hospitales</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {companies.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-muted-foreground">
+                          Todavía no hay empresas registradas.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      companies.map((company) => (
+                        <TableRow key={company.id}>
+                          <TableCell className="font-medium">{company.name}</TableCell>
+                          <TableCell>
+                            {PERIOD_LABELS[company.paymentPeriodType]}
+                          </TableCell>
+                          <TableCell>
+                            {
+                              hospitals.filter((h) => h.companyId === company.id).length
+                            }
+                          </TableCell>
+                          <TableCell>
+                            <ActiveBadge active={company.active} />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex justify-end gap-2">
+                              <CompanyDialog
+                                company={company}
+                                trigger={
+                                  <Button variant="outline" size="sm">
+                                    Editar
+                                  </Button>
+                                }
+                              />
+                              <ActionButton
+                                action={toggleCompany}
+                                values={{ id: company.id }}
+                              >
+                                {company.active ? "Desactivar" : "Activar"}
+                              </ActionButton>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="hospitales">
+          <Card>
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div>
+                <CardTitle className="text-base">Hospitales</CardTitle>
+                <CardDescription>
+                  Cada hospital pertenece a una empresa y tiene su propio precio.
+                </CardDescription>
+              </div>
+              <HospitalDialog
+                companies={companies}
+                trigger={
+                  <Button size="sm" disabled={companies.length === 0}>
+                    <Plus className="size-4" />
+                    Nuevo hospital
+                  </Button>
+                }
+              />
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Hospital</TableHead>
+                      <TableHead>Empresa</TableHead>
+                      <TableHead className="text-right">Precio actual</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {hospitals.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-muted-foreground">
+                          Todavía no hay hospitales registrados.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      hospitals.map((hospital) => (
+                        <TableRow key={hospital.id}>
+                          <TableCell className="font-medium">{hospital.name}</TableCell>
+                          <TableCell>{hospital.companyName}</TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatCurrency(hospital.price)}
+                          </TableCell>
+                          <TableCell>
+                            <ActiveBadge active={hospital.active} />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex justify-end gap-2">
+                              <HospitalDialog
+                                hospital={hospital}
+                                companies={companies}
+                                trigger={
+                                  <Button variant="outline" size="sm">
+                                    Editar
+                                  </Button>
+                                }
+                              />
+                              <ActionButton
+                                action={toggleHospital}
+                                values={{ id: hospital.id }}
+                              >
+                                {hospital.active ? "Desactivar" : "Activar"}
+                              </ActionButton>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="usuarios">
+          <Card>
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div>
+                <CardTitle className="text-base">Capturistas</CardTitle>
+                <CardDescription>
+                  Las contraseñas se guardan cifradas con bcrypt.
+                </CardDescription>
+              </div>
+              <UserDialog
+                trigger={
+                  <Button size="sm">
+                    <Plus className="size-4" />
+                    Nuevo usuario
+                  </Button>
+                }
+              />
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Usuario</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {user.username}
+                        </TableCell>
+                        <TableCell>
+                          <ActiveBadge active={user.active} />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-end gap-2">
+                            <UserDialog
+                              user={user}
+                              trigger={
+                                <Button variant="outline" size="sm">
+                                  Editar
+                                </Button>
+                              }
+                            />
+                            <ActionButton action={toggleUser} values={{ id: user.id }}>
+                              {user.active ? "Desactivar" : "Activar"}
+                            </ActionButton>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
