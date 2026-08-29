@@ -13,22 +13,22 @@ const COMPANIES = [
     name: "Empresa A",
     paymentPeriodType: "weekly" as const,
     hospitals: [
-      { name: "Hospital 1", price: 78.5 },
-      { name: "Hospital 2", price: 82 },
-      { name: "Hospital 3", price: 91.25 },
-      { name: "Hospital 4", price: 74 },
+      { name: "Hospital 1", state: "Sinaloa", price: 78.5 },
+      { name: "Hospital 2", state: "Sinaloa", price: 82 },
+      { name: "Hospital 3", state: "Sonora", price: 91.25 },
+      { name: "Hospital 4", state: "Sinaloa", price: 74 },
     ],
   },
   {
     name: "Empresa B",
     paymentPeriodType: "biweekly" as const,
     hospitals: [
-      { name: "Hospital 5", price: 88 },
-      { name: "Hospital 6", price: 79.9 },
-      { name: "Hospital 7", price: 95 },
-      { name: "Hospital 8", price: 84.5 },
-      { name: "Hospital 9", price: 90 },
-      { name: "Hospital 10", price: 76.75 },
+      { name: "Hospital 5", state: "Sinaloa", price: 88 },
+      { name: "Hospital 6", state: "Sinaloa", price: 79.9 },
+      { name: "Hospital 7", state: "Nayarit", price: 95 },
+      { name: "Hospital 8", state: "Sinaloa", price: 84.5 },
+      { name: "Hospital 9", state: "Durango", price: 90 },
+      { name: "Hospital 10", state: "Sinaloa", price: 76.75 },
     ],
   },
 ];
@@ -73,13 +73,14 @@ async function main() {
       if (existing) {
         await prisma.hospital.update({
           where: { id: existing.id },
-          data: { price: hospital.price, active: true },
+          data: { price: hospital.price, state: hospital.state, active: true },
         });
       } else {
         await prisma.hospital.create({
           data: {
             companyId: created.id,
             name: hospital.name,
+            state: hospital.state,
             price: hospital.price,
             active: true,
           },
@@ -93,14 +94,15 @@ async function main() {
   if (existingUser) {
     await prisma.user.update({
       where: { id: existingUser.id },
-      data: { passwordHash, active: true, name: "Capturista Demo" },
+      data: { passwordHash, active: true, name: "Administrador", role: "admin" },
     });
   } else {
     await prisma.user.create({
       data: {
-        name: "Capturista Demo",
+        name: "Administrador",
         username: "demo",
         passwordHash,
+        role: "admin",
         active: true,
       },
     });
@@ -149,7 +151,7 @@ async function main() {
   console.log(
     `Listo: ${COMPANIES.length} empresas, ${hospitals.length} hospitales, ${createdRecords} capturas de ejemplo.`,
   );
-  console.log("Usuario demo: demo / demo123");
+  console.log("Usuario administrador inicial: demo / demo123");
 }
 
 main()

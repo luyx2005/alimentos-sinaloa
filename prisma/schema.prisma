@@ -12,6 +12,11 @@ enum PaymentPeriodType {
   biweekly
 }
 
+enum UserRole {
+  admin
+  capturista
+}
+
 model Company {
   id                Int               @id @default(autoincrement())
   name              String
@@ -29,6 +34,8 @@ model Hospital {
   id        Int      @id @default(autoincrement())
   companyId Int      @map("company_id")
   name      String
+  /// Entidad federativa de la República Mexicana donde está el hospital.
+  state     String
   price     Decimal  @db.Decimal(10, 2)
   active    Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
@@ -46,6 +53,7 @@ model User {
   name         String
   username     String   @unique
   passwordHash String   @map("password_hash")
+  role         UserRole @default(capturista)
   active       Boolean  @default(true)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
