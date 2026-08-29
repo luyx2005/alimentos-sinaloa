@@ -175,6 +175,7 @@ src/
       no-completados/  Hospitales sin captura completa
       reportes/        Hospital, empresa, pacientes vs personal, servicio, no completados
       configuracion/   Empresas, hospitales y usuarios
+    pitch/             Deck de presentación (público)
   components/          UI compartida (shadcn/ui en components/ui)
   lib/
     calc.ts            Cálculos de totales, importes y estado de captura
@@ -202,6 +203,8 @@ src/
 - **Configuración**: alta, edición y activación/desactivación de empresas, hospitales
   (con su estado y precio) y usuarios. Toda la sección requiere rol de administrador y
   cada columna se puede ordenar de forma ascendente o descendente desde su encabezado.
+- **Pitch** (`/pitch`): diapositivas de presentación, públicas, con flechas o clic para
+  avanzar. Desde el navegador se pueden imprimir a PDF.
 
 ## Seguridad
 

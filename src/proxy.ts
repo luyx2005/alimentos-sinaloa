@@ -4,10 +4,10 @@ import { SESSION_COOKIE, canAccessPath, verifySessionToken } from "@/lib/session
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
-  const isLogin = pathname === "/login";
+  const isPublic = pathname === "/login" || pathname === "/pitch";
   const session = await verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
 
-  if (!session && !isLogin) {
+  if (!session && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname + search)}`;
@@ -17,7 +17,7 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  if (session && (isLogin || !canAccessPath(session.role, pathname))) {
+  if (session && (pathname === "/login" || !canAccessPath(session.role, pathname))) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.search = "";

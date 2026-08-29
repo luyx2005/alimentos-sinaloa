@@ -619,6 +619,14 @@ try {
     `${sinSesion.status()} · ${sinSesion.headers()["content-type"] ?? ""}`,
   );
 
+  await page.goto(`${BASE}/pitch`);
+  check(
+    "23c. El pitch se puede ver sin sesión",
+    page.url().includes("/pitch") &&
+      (await page.getByRole("heading", { name: "Alimentos Sinaloa" }).isVisible()),
+    page.url(),
+  );
+
   const erroresRelevantes = consoleErrors.filter(
     (error) => !/favicon|Download the React DevTools/i.test(error),
   );

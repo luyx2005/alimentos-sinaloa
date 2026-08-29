@@ -128,3 +128,18 @@
     @apply font-sans;
   }
 }
+
+@media print {
+  @page {
+    size: landscape;
+    margin: 0;
+  }
+
+  .pitch-page {
+    break-after: page;
+    height: 100vh;
+    width: 100vw;
+    background: #16241e;
+    color: #f4efe4;
+  }
+}
