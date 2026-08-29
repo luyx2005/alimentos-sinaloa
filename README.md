@@ -12,8 +12,9 @@ a Excel y PDF.
 - Al guardar una captura se copia el precio vigente del hospital en el registro
   (`applied_price`), de modo que un cambio de precio posterior **no altera** los importes
   históricos.
-- Los reportes se agrupan por el periodo de pago de cada empresa: **semanal**
-  (lunes a domingo) o **quincenal** (1–15 y 16 al último día del mes).
+- Cada empresa tiene un periodo de pago, **semanal** (lunes a domingo) o **quincenal**
+  (1–15 y 16 al último día del mes), que se ofrece como atajo en los reportes sin limitar
+  la consulta a esos rangos.
 
 ## Reglas de negocio implementadas
 
@@ -179,7 +180,9 @@ src/
 - **Reportes**: cinco reportes con filtros y botones de Exportar Excel / Exportar PDF. El
   Excel del reporte por empresa trae tres hojas: Resumen, Detalle y No completados. Al
   entrar a Reportes no hay ningún filtro preseleccionado: el reporte se genera cuando
-  eliges empresa, hospital y fechas.
+  eliges empresa, hospital y fechas. Todos los reportes, incluido el de empresa, usan un
+  rango de fechas libre; los periodos de pago de la empresa aparecen como atajo para
+  rellenar ese rango.
 - **Configuración**: alta, edición y activación/desactivación de empresas, hospitales
   (con su estado y precio) y usuarios. Toda la sección requiere rol de administrador y
   cada columna se puede ordenar de forma ascendente o descendente desde su encabezado.

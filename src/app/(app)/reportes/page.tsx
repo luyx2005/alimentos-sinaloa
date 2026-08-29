@@ -1,6 +1,10 @@
 import Link from "next/link";
 
-import { QueryDate, QuerySelect } from "@/components/query-filters";
+import {
+  QueryDate,
+  QueryRangeShortcut,
+  QuerySelect,
+} from "@/components/query-filters";
 import {
   Card,
   CardContent,
@@ -62,13 +66,15 @@ export default async function ReportesPage({ searchParams }: PageProps<"/reporte
   const hospital = hospitals.find((item) => item.id === hospitalParam);
 
   const today = todayISO();
+  // Los periodos de pago son solo un atajo para rellenar el rango de fechas.
   const periods = company ? listRecentPeriods(company, today, 12) : [];
-  const periodParam = String(params.periodo ?? "");
-  const period = periods.find((item) => item.startDate === periodParam);
 
   const desde = isISODate(params.desde as string) ? (params.desde as string) : "";
   const hasta = isISODate(params.hasta as string) ? (params.hasta as string) : "";
   const rango = desde && hasta;
+  const matchingPeriod = periods.find(
+    (item) => item.startDate === desde && item.endDate === hasta,
+  );
 
   const companyOptions = companies.map((item) => ({
     value: String(item.id),
@@ -86,12 +92,8 @@ export default async function ReportesPage({ searchParams }: PageProps<"/reporte
     if (hospital && key !== "empresa" && key !== "no-completados") {
       query.set("hospital", String(hospital.id));
     }
-    if (key === "empresa") {
-      if (period) query.set("periodo", period.startDate);
-    } else {
-      if (desde) query.set("desde", desde);
-      if (hasta) query.set("hasta", hasta);
-    }
+    if (desde) query.set("desde", desde);
+    if (hasta) query.set("hasta", hasta);
     return `/reportes?${query.toString()}`;
   };
 
@@ -127,7 +129,7 @@ export default async function ReportesPage({ searchParams }: PageProps<"/reporte
           <CardTitle className="text-base">Filtros</CardTitle>
           <CardDescription>
             {tipo === "empresa"
-              ? "Elige la empresa y el periodo de pago que quieres revisar."
+              ? "Elige la empresa y el rango de fechas. Los periodos de pago son un atajo para rellenar las fechas, pero puedes consultar cualquier rango."
               : "Elige la empresa y el rango de fechas de servicio."}
           </CardDescription>
         </CardHeader>
@@ -157,27 +159,27 @@ export default async function ReportesPage({ searchParams }: PageProps<"/reporte
               />
             ) : null}
 
+            <QueryDate param="desde" value={desde} label="Fecha inicial" />
+            <QueryDate param="hasta" value={hasta} label="Fecha final" />
+
             {tipo === "empresa" ? (
-              <QuerySelect
-                param="periodo"
-                value={period ? period.startDate : ""}
-                label="Periodo"
+              <QueryRangeShortcut
+                label="Periodo de pago (atajo)"
                 options={periods.map((item) => ({
                   value: item.startDate,
                   label: item.label,
+                  from: item.startDate,
+                  to: item.endDate,
                 }))}
+                from={desde}
+                to={hasta}
                 placeholder={
                   company ? "Selecciona un periodo" : "Elige primero la empresa"
                 }
                 disabled={periods.length === 0}
                 className="sm:w-auto"
               />
-            ) : (
-              <>
-                <QueryDate param="desde" value={desde} label="Fecha inicial" />
-                <QueryDate param="hasta" value={hasta} label="Fecha final" />
-              </>
-            )}
+            ) : null}
           </div>
         </CardContent>
       </Card>
@@ -201,16 +203,19 @@ export default async function ReportesPage({ searchParams }: PageProps<"/reporte
           />
         )
       ) : tipo === "empresa" ? (
-        company && period ? (
+        company && rango ? (
           <ReportCompany
             companyId={company.id}
-            from={period.startDate}
-            to={period.endDate}
-            periodLabel={period.label}
+            from={desde}
+            to={hasta}
+            periodLabel={matchingPeriod?.label ?? "Rango personalizado"}
           />
         ) : (
           <MissingFilters
-            items={[...(company ? [] : ["empresa"]), ...(period ? [] : ["periodo"])]}
+            items={[
+              ...(company ? [] : ["empresa"]),
+              ...(rango ? [] : ["rango de fechas"]),
+            ]}
           />
         )
       ) : tipo === "pacientes" || tipo === "servicio" ? (

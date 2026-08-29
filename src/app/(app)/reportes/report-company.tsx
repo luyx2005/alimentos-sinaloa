@@ -214,7 +214,7 @@ export async function ReportCompany({
           <CardTitle className="text-base">{company.name}</CardTitle>
           <CardDescription>
             {period.label} · {period.startDate} al {period.endDate} ·{" "}
-            {pending.length} días no completados en el periodo
+            {pending.length} días no completados en el rango
           </CardDescription>
         </div>
         <ExportButtons payload={payload} disabled={records.length === 0} />

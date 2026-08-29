@@ -67,6 +67,58 @@ export function QueryDate({
   );
 }
 
+/**
+ * Atajo que rellena un rango de fechas. No limita la consulta: después de elegir un
+ * periodo de pago las fechas se pueden ajustar a mano.
+ */
+export function QueryRangeShortcut({
+  label,
+  options,
+  from,
+  to,
+  placeholder = "Selecciona",
+  disabled,
+  className,
+}: {
+  label: string;
+  options: { value: string; label: string; from: string; to: string }[];
+  from: string;
+  to: string;
+  placeholder?: string;
+  disabled?: boolean;
+  className?: string;
+}) {
+  const { setParams, pending } = useSetParam();
+  const current = options.find((option) => option.from === from && option.to === to);
+
+  return (
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <Label htmlFor="filter-periodo" className="text-xs text-muted-foreground">
+        {label}
+      </Label>
+      <Select
+        value={current ? current.value : ""}
+        disabled={disabled || pending}
+        onValueChange={(next) => {
+          const option = options.find((item) => item.value === next);
+          if (option) setParams({ desde: option.from, hasta: option.to });
+        }}
+      >
+        <SelectTrigger id="filter-periodo" className="w-full sm:w-72">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent className="max-h-72">
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 export function QuerySelect({
   param,
   value,

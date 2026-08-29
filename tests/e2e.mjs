@@ -347,18 +347,18 @@ try {
   );
   check("14. Descarga de PDF", pdfHospital.endsWith(".pdf"), pdfHospital);
 
-  // 15. Reporte por empresa (semanal) + Excel
+  // 15. Reporte por empresa + Excel
   await page.goto(`${BASE}/reportes?tipo=empresa&empresa=1`);
   await page.locator("#filter-periodo").click();
   const opcionSemanal = page.getByRole("option").first();
   const periodoSemanal = (await opcionSemanal.textContent()) ?? "";
   check(
-    "15a. Empresa semanal muestra periodos de lunes a domingo",
+    "15a. El atajo de periodos ofrece semanas de lunes a domingo",
     /Semana del/.test(periodoSemanal),
     periodoSemanal,
   );
   await opcionSemanal.click();
-  await page.waitForURL(/periodo=/);
+  await page.waitForURL(/desde=/);
   await page.locator("table").first().waitFor();
   const tablaEmpresa = (await page.locator("table").first().textContent()) ?? "";
   check(
@@ -374,15 +374,28 @@ try {
     excelEmpresa,
   );
 
-  // 16. Empresa quincenal
+  // 16. Empresa quincenal y rango libre
   await page.goto(`${BASE}/reportes?tipo=empresa&empresa=2`);
   await page.locator("#filter-periodo").click();
   const periodoQuincenal = (await page.getByRole("option").first().textContent()) ?? "";
   await page.keyboard.press("Escape");
   check(
-    "16. Empresa quincenal muestra quincenas",
+    "16a. El atajo de la empresa quincenal ofrece quincenas",
     /al \d+ de \w+ de \d{4}/.test(periodoQuincenal) && !/Semana del/.test(periodoQuincenal),
     periodoQuincenal,
+  );
+
+  await page.goto(
+    `${BASE}/reportes?tipo=empresa&empresa=${empresaPruebaId}&desde=2026-08-19&hasta=2026-08-22`,
+  );
+  await page.locator("table").first().waitFor();
+  const tablaRangoLibre = (await page.locator("table").first().textContent()) ?? "";
+  check(
+    "16b. El reporte por empresa acepta un rango de fechas libre",
+    tablaRangoLibre.includes("TOTAL EMPRESA") &&
+      tablaRangoLibre.includes("$6,500.00") &&
+      ((await page.locator("main").textContent()) ?? "").includes("Rango personalizado"),
+    tablaRangoLibre.replace(/\s+/g, " ").slice(0, 200),
   );
 
   // 17-18. Resto de reportes
