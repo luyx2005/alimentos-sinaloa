@@ -75,7 +75,10 @@ export default async function ReportesPage({ searchParams }: PageProps<"/reporte
   const buildTabHref = (key: TabKey) => {
     const query = new URLSearchParams();
     query.set("tipo", key);
-    if (company) query.set("empresa", String(company.id));
+    // El reporte de pendientes admite "todas las empresas", así que no se fuerza el filtro.
+    if (company && (key !== "pendientes" || empresaParam)) {
+      query.set("empresa", String(company.id));
+    }
     if (hospital && key !== "empresa" && key !== "pendientes") {
       query.set("hospital", String(hospital.id));
     }
@@ -128,7 +131,15 @@ export default async function ReportesPage({ searchParams }: PageProps<"/reporte
           <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
             <QuerySelect
               param="empresa"
-              value={company ? String(company.id) : ""}
+              value={
+                tipo === "pendientes"
+                  ? empresaParam
+                    ? String(empresaParam)
+                    : ""
+                  : company
+                    ? String(company.id)
+                    : ""
+              }
               label="Empresa"
               options={companyOptions}
               resetParams={["hospital", "periodo"]}
