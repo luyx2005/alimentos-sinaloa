@@ -11,6 +11,7 @@ import {
   type Totals,
 } from "@/lib/calc";
 import type { UserRole } from "@/lib/auth";
+import type { ImageField } from "@/lib/uploads";
 import type { PaymentPeriodType } from "@/lib/periods";
 
 export type CompanyDTO = {
@@ -54,6 +55,8 @@ export type RecordDTO = {
   dinnerPatients: number | null;
   dinnerStaff: number | null;
   dinnerSnack: number | null;
+  /** Fotos adjuntas: true cuando la captura tiene imagen en ese campo. */
+  images: Record<ImageField, boolean>;
   appliedPrice: number;
   totals: Totals;
   status: CaptureStatus;
@@ -73,6 +76,10 @@ type RecordRow = {
   dinnerPatients: number | null;
   dinnerStaff: number | null;
   dinnerSnack: number | null;
+  breakfastImage: string | null;
+  lunchImage: string | null;
+  dinnerImage: string | null;
+  reportImage: string | null;
   appliedPrice: unknown;
   hospital: { id: number; name: string; companyId: number; company: { name: string } };
 };
@@ -99,6 +106,12 @@ function toRecordDTO(row: RecordRow): RecordDTO {
     companyName: row.hospital.company.name,
     serviceDate: toISODate(row.serviceDate),
     ...quantities,
+    images: {
+      breakfastImage: row.breakfastImage !== null,
+      lunchImage: row.lunchImage !== null,
+      dinnerImage: row.dinnerImage !== null,
+      reportImage: row.reportImage !== null,
+    },
     appliedPrice,
     totals: computeTotals(quantities, appliedPrice),
     status: captureStatus(quantities),

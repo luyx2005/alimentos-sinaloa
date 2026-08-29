@@ -77,6 +77,12 @@ model DailyRecord {
   dinnerPatients    Int?     @map("dinner_patients")
   dinnerStaff       Int?     @map("dinner_staff")
   dinnerSnack       Int?     @map("dinner_snack")
+  /// Rutas relativas de las fotos dentro de la carpeta de subidas.
+  breakfastImage    String?  @map("breakfast_image")
+  lunchImage        String?  @map("lunch_image")
+  dinnerImage       String?  @map("dinner_image")
+  /// Foto del reporte diario: obligatoria al registrar una captura nueva.
+  reportImage       String?  @map("report_image")
   appliedPrice      Decimal  @map("applied_price") @db.Decimal(10, 2)
   active            Boolean  @default(true)
   createdAt         DateTime @default(now()) @map("created_at")

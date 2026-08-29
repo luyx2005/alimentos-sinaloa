@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
-import { Save, Trash2, TriangleAlert } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Camera, ImageIcon, Save, Trash2, TriangleAlert, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { deleteRecord, saveRecord } from "@/app/(app)/captura/actions";
@@ -27,8 +27,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import { computeTotals, formatCurrency, formatNumber } from "@/lib/calc";
 import type { HospitalDTO, RecordDTO } from "@/lib/data";
+import type { ImageField } from "@/lib/uploads";
 
 type FieldName =
   | "breakfastPatients"
@@ -62,6 +64,7 @@ const SERVICES = [
     patients: "breakfastPatients",
     staff: "breakfastStaff",
     snack: "breakfastSnack",
+    image: "breakfastImage",
   },
   {
     title: "Comida",
@@ -69,6 +72,7 @@ const SERVICES = [
     patients: "lunchPatients",
     staff: "lunchStaff",
     snack: "lunchSnack",
+    image: "lunchImage",
   },
   {
     title: "Cena",
@@ -76,6 +80,7 @@ const SERVICES = [
     patients: "dinnerPatients",
     staff: "dinnerStaff",
     snack: "dinnerSnack",
+    image: "dinnerImage",
   },
 ] as const satisfies readonly {
   title: string;
@@ -83,7 +88,11 @@ const SERVICES = [
   patients: FieldName;
   staff: FieldName;
   snack: FieldName;
+  image: ImageField;
 }[];
+
+const ACCEPTED_IMAGES = "image/jpeg,image/png,image/webp,image/heic";
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
 function toFormValues(record: RecordDTO | null): FormValues {
   if (!record) return EMPTY;
@@ -153,8 +162,24 @@ export function CaptureForm({
 }) {
   const router = useRouter();
   const [values, setValues] = useState<FormValues>(() => toFormValues(record));
+  const [images, setImages] = useState<Partial<Record<ImageField, File>>>({});
   const [pending, startTransition] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const savedImages = record?.images;
+  const hasReportImage = Boolean(images.reportImage || savedImages?.reportImage);
+  // La foto es obligatoria en cada captura nueva. Las capturas registradas antes de
+  // esta función se pueden seguir corrigiendo, pidiendo la foto sin bloquear.
+  const blocksSave = !record && !hasReportImage;
+
+  const selectImage = (field: ImageField) => (file: File | null) => {
+    setImages((prev) => {
+      const next = { ...prev };
+      if (file) next[field] = file;
+      else delete next[field];
+      return next;
+    });
+  };
 
   const appliedPrice = record ? record.appliedPrice : hospital.price;
 
@@ -182,11 +207,17 @@ export function CaptureForm({
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (blocksSave) {
+      toast.error("Adjunta la foto del reporte diario para guardar la captura.");
+      return;
+    }
+
     const formData = new FormData();
     formData.set("hospitalId", String(hospital.id));
     formData.set("serviceDate", serviceDate);
     if (record) formData.set("recordId", String(record.id));
     for (const [field, value] of Object.entries(values)) formData.set(field, value);
+    for (const [field, file] of Object.entries(images)) formData.set(field, file);
 
     startTransition(async () => {
       const result = await saveRecord(formData);
@@ -252,9 +283,50 @@ export function CaptureForm({
                 value={values[service.snack]}
                 onChange={setField(service.snack)}
               />
+              <PhotoField
+                field={service.image}
+                label={`Foto de ${service.title.toLowerCase()} (opcional)`}
+                file={images[service.image] ?? null}
+                savedUrl={
+                  record && savedImages?.[service.image]
+                    ? `/api/capturas/${record.id}/imagen/${service.image}`
+                    : null
+                }
+                onSelect={selectImage(service.image)}
+                className="col-span-2 sm:col-span-3"
+              />
             </CardContent>
           </Card>
         ))}
+
+        <Card className={hasReportImage ? undefined : "border-primary/50"}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              Reporte diario
+              <span className="text-xs font-normal text-muted-foreground">
+                Obligatorio
+              </span>
+            </CardTitle>
+            <CardDescription>
+              {blocksSave
+                ? "Adjunta la foto del reporte diario firmado del hospital. Sin ella no se puede guardar la captura."
+                : "Adjunta la foto del reporte diario firmado del hospital. Al cambiarla se reemplaza la anterior."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PhotoField
+              field="reportImage"
+              label="Foto del reporte diario"
+              file={images.reportImage ?? null}
+              savedUrl={
+                record && savedImages?.reportImage
+                  ? `/api/capturas/${record.id}/imagen/reportImage`
+                  : null
+              }
+              onSelect={selectImage("reportImage")}
+            />
+          </CardContent>
+        </Card>
 
         <p className="flex items-start gap-2 text-xs text-muted-foreground">
           <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
@@ -299,6 +371,13 @@ export function CaptureForm({
             <Save className="size-4" />
             {pending ? "Guardando…" : record ? "Guardar cambios" : "Guardar captura"}
           </Button>
+          {hasReportImage ? null : (
+            <p className="text-xs text-muted-foreground">
+              {blocksSave
+                ? "Falta la foto del reporte diario."
+                : "Esta captura no tiene foto del reporte diario. Adjúntala cuando la tengas."}
+            </p>
+          )}
           {record ? (
             <Button
               type="button"
@@ -338,6 +417,122 @@ export function CaptureForm({
         </AlertDialogContent>
       </AlertDialog>
     </form>
+  );
+}
+
+function PhotoField({
+  field,
+  label,
+  file,
+  savedUrl,
+  onSelect,
+  className,
+}: {
+  field: ImageField;
+  label: string;
+  file: File | null;
+  savedUrl: string | null;
+  onSelect: (file: File | null) => void;
+  className?: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
+
+  const shownUrl = preview ?? savedUrl;
+
+  return (
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <Label htmlFor={field} className="text-xs text-muted-foreground">
+        {label}
+      </Label>
+      <input
+        ref={inputRef}
+        id={field}
+        name={field}
+        type="file"
+        accept={ACCEPTED_IMAGES}
+        className="sr-only"
+        onChange={(event) => {
+          const selected = event.target.files?.[0] ?? null;
+          if (!selected) return;
+          if (!ACCEPTED_IMAGES.split(",").includes(selected.type)) {
+            toast.error("La foto debe ser JPG, PNG, WEBP o HEIC.");
+            event.target.value = "";
+            return;
+          }
+          if (selected.size > MAX_IMAGE_BYTES) {
+            toast.error("La foto pesa más de 8 MB. Usa una imagen más ligera.");
+            event.target.value = "";
+            return;
+          }
+          onSelect(selected);
+        }}
+      />
+
+      {shownUrl ? (
+        <div className="flex items-center gap-3 rounded-lg border p-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={shownUrl}
+            alt={label}
+            className="size-16 shrink-0 rounded-md object-cover"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm">
+              {file ? file.name : "Foto guardada en esta captura"}
+            </p>
+            <div className="mt-1 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => inputRef.current?.click()}
+              >
+                <Camera className="size-4" />
+                Cambiar
+              </Button>
+              {file ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (inputRef.current) inputRef.current.value = "";
+                    onSelect(null);
+                  }}
+                >
+                  <X className="size-4" />
+                  Quitar
+                </Button>
+              ) : (
+                <Button asChild variant="ghost" size="sm">
+                  <a href={savedUrl ?? "#"} target="_blank" rel="noreferrer">
+                    <ImageIcon className="size-4" />
+                    Ver
+                  </a>
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          className="justify-start border-dashed"
+          onClick={() => inputRef.current?.click()}
+        >
+          <Camera className="size-4" />
+          Adjuntar foto
+        </Button>
+      )}
+    </div>
   );
 }
 

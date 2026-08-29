@@ -6,7 +6,7 @@
  * Requiere Google Chrome instalado (se usa el canal "chrome" de Playwright).
  */
 import { chromium } from "playwright";
-import { mkdtempSync, readdirSync } from "node:fs";
+import { mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -27,6 +27,17 @@ function check(name, condition, detail = "") {
 }
 
 const downloads = mkdtempSync(join(tmpdir(), "descargas-"));
+
+// PNG mínimo de 1x1 para adjuntar como foto en las capturas.
+const fotos = mkdtempSync(join(tmpdir(), "fotos-"));
+const FOTO_PNG = join(fotos, "reporte.png");
+writeFileSync(
+  FOTO_PNG,
+  Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    "base64",
+  ),
+);
 
 // Nombres únicos por corrida para que la prueba se pueda repetir sobre la misma base.
 const sufijo = Date.now().toString().slice(-5);
@@ -197,10 +208,26 @@ try {
   );
 
   await page.getByRole("button", { name: "Guardar captura" }).click();
+  check(
+    "5d. Sin la foto del reporte diario no se guarda la captura",
+    (await esperaTexto(/Adjunta la foto del reporte diario/)) &&
+      new URL(page.url()).pathname.startsWith("/captura/"),
+    page.url(),
+  );
+
+  await page.locator("#breakfastImage").setInputFiles(FOTO_PNG);
+  await page.locator("#reportImage").setInputFiles(FOTO_PNG);
+  check(
+    "5e. Las fotos adjuntas se previsualizan antes de guardar",
+    (await page.locator("img[alt='Foto del reporte diario']").isVisible()) &&
+      (await page.locator("img[alt='Foto de desayuno (opcional)']").isVisible()),
+  );
+
+  await page.getByRole("button", { name: "Guardar captura" }).click();
   await page.waitForURL(/\/captura\?fecha=2026-08-20/);
   await page.getByRole("row", { name: HOSPITAL }).waitFor();
   check(
-    "5d. Tras guardar el hospital queda Completo",
+    "5f. Tras guardar el hospital queda Completo",
     (await page.getByRole("row", { name: HOSPITAL }).textContent())?.includes(
       "Completo",
     ) ?? false,
@@ -222,6 +249,7 @@ try {
   ]) {
     await page.locator(`#${campo}`).fill("0");
   }
+  await page.locator("#reportImage").setInputFiles(FOTO_PNG);
   await page.getByRole("button", { name: "Guardar captura" }).click();
   await page.waitForURL(/\/captura\?fecha=2026-08-21/);
   const filaCero = page.getByRole("row", { name: HOSPITAL });
@@ -238,6 +266,18 @@ try {
   check(
     "7. Al reabrir la fecha se edita la captura existente",
     await page.getByText("Ya existe una captura para este hospital y fecha").isVisible(),
+  );
+
+  const urlFoto = await page
+    .locator("img[alt='Foto del reporte diario']")
+    .getAttribute("src");
+  const respuestaFoto = await page.request.get(`${BASE}${urlFoto}`);
+  check(
+    "7b. La foto guardada se muestra y se sirve desde la captura",
+    (urlFoto ?? "").includes("/imagen/reportImage") &&
+      respuestaFoto.ok() &&
+      (respuestaFoto.headers()["content-type"] ?? "").startsWith("image/"),
+    `${urlFoto} · ${respuestaFoto.status()}`,
   );
 
   // 8. Modificación
@@ -552,6 +592,14 @@ try {
     "23. Sin sesión, las rutas privadas redirigen al login",
     page.url().includes("/login"),
     page.url(),
+  );
+
+  const sinSesion = await page.request.get(`${BASE}${urlFoto}`, { maxRedirects: 0 });
+  check(
+    "23b. Las fotos de las capturas no son públicas",
+    [301, 302, 307, 308, 401].includes(sinSesion.status()) &&
+      !(sinSesion.headers()["content-type"] ?? "").startsWith("image/"),
+    `${sinSesion.status()} · ${sinSesion.headers()["content-type"] ?? ""}`,
   );
 
   const erroresRelevantes = consoleErrors.filter(

@@ -5,6 +5,14 @@ import { revalidatePath } from "next/cache";
 import { requireSession } from "@/lib/auth";
 import { isISODate, parseISODate } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
+import {
+  IMAGE_FIELDS,
+  IMAGE_FIELD_LABELS,
+  deleteImage,
+  storeImage,
+  validateImage,
+  type ImageField,
+} from "@/lib/uploads";
 
 export type SaveRecordResult = {
   ok: boolean;
@@ -26,6 +34,10 @@ const QUANTITY_FIELDS = [
 ] as const;
 
 type QuantityField = (typeof QUANTITY_FIELDS)[number];
+
+function pickedFile(value: FormDataEntryValue | null): File | null {
+  return value instanceof File && value.size > 0 ? value : null;
+}
 
 /** Devuelve null cuando el campo viene vacío ("no capturado"); 0 es un valor válido. */
 function parseQuantity(value: FormDataEntryValue | null): number | null | "invalid" {
@@ -68,6 +80,16 @@ export async function saveRecord(formData: FormData): Promise<SaveRecordResult> 
     quantities[field] = parsed;
   }
 
+  const files = {} as Record<ImageField, File | null>;
+  for (const field of IMAGE_FIELDS) {
+    const file = pickedFile(formData.get(field));
+    if (file) {
+      const validation = validateImage(file, IMAGE_FIELD_LABELS[field]);
+      if (!validation.ok) return { ok: false, message: validation.message };
+    }
+    files[field] = file;
+  }
+
   const hospital = await prisma.hospital.findUnique({ where: { id: hospitalId } });
   if (!hospital) return { ok: false, message: "Hospital no encontrado." };
 
@@ -107,19 +129,30 @@ export async function saveRecord(formData: FormData): Promise<SaveRecordResult> 
       });
       if (!record) return { ok: false, message: "La captura ya no existe." };
 
+      // Al corregir una captura la foto ya guardada se conserva; solo se reemplaza si
+      // se adjunta otra. Las capturas anteriores a esta función se pueden seguir
+      // editando sin foto.
+      const images = await storeImages(files, hospitalId, serviceDate);
       await prisma.dailyRecord.update({
         where: { id: recordId },
-        data: { hospitalId, serviceDate: date, ...quantities },
+        data: { hospitalId, serviceDate: date, ...quantities, ...images },
       });
+      for (const field of IMAGE_FIELDS) {
+        if (images[field]) await deleteImage(record[field]);
+      }
       revalidateAll();
       return { ok: true, message: "Captura actualizada.", recordId };
     }
 
+    if (!files.reportImage) return { ok: false, message: FALTA_REPORTE };
+
+    const images = await storeImages(files, hospitalId, serviceDate);
     const created = await prisma.dailyRecord.create({
       data: {
         hospitalId,
         serviceDate: date,
         ...quantities,
+        ...images,
         appliedPrice: hospital.price,
       },
     });
@@ -140,6 +173,22 @@ export async function saveRecord(formData: FormData): Promise<SaveRecordResult> 
     }
     throw error;
   }
+}
+
+const FALTA_REPORTE = "Adjunta la foto del reporte diario para guardar la captura.";
+
+async function storeImages(
+  files: Record<ImageField, File | null>,
+  hospitalId: number,
+  serviceDate: string,
+): Promise<Partial<Record<ImageField, string>>> {
+  const stored: Partial<Record<ImageField, string>> = {};
+  for (const field of IMAGE_FIELDS) {
+    const file = files[field];
+    if (!file) continue;
+    stored[field] = await storeImage({ file, hospitalId, serviceDate, field });
+  }
+  return stored;
 }
 
 export async function deleteRecord(formData: FormData): Promise<SaveRecordResult> {

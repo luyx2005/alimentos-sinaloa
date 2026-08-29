@@ -30,6 +30,10 @@ a Excel y PDF.
 - **Cero es un valor válido**: "no capturado" (campo vacío) y "0" son cosas distintas. Un
   registro está completo cuando desayuno, comida y cena tienen sus tres cantidades
   (pacientes, personal y colación).
+- Cada servicio admite **una foto opcional** (la charola, la lista firmada, lo que
+  documente el turno) y toda captura nueva exige la **foto del reporte diario**. Las
+  capturas registradas antes de esta función se pueden seguir corrigiendo sin foto: la
+  pantalla la pide, pero no bloquea el guardado.
 - Las capturas se pueden modificar y eliminar. La eliminación es **lógica**
   (`active = false`); los registros eliminados no aparecen en los reportes.
 - Se puede capturar cualquier fecha de servicio: el sistema no bloquea fechas.
@@ -90,12 +94,23 @@ npm run dev
 La aplicación queda en `http://localhost:3000` (el script de desarrollo acepta
 `-- --port 43137` si necesitas otro puerto).
 
+### Fotos de las capturas
+
+Las imágenes se guardan en disco, fuera de `public/`, dentro de la carpeta indicada por
+`UPLOADS_DIR` (por omisión `./uploads`, ignorada por git). En la base solo se guarda la
+ruta relativa. Se sirven por `GET /api/capturas/[id]/imagen/[campo]`, que exige sesión
+iniciada: un enlace directo sin cookie no devuelve la imagen. Se aceptan JPG, PNG, WEBP y
+HEIC de hasta 8 MB; al reemplazar una foto se borra la anterior del disco.
+
+Para respaldar el sistema hay que copiar la base de datos **y** esa carpeta.
+
 ### Variables de entorno
 
 | Variable       | Descripción                                                  |
 | -------------- | ------------------------------------------------------------ |
 | `DATABASE_URL` | Cadena de conexión de PostgreSQL.                            |
 | `AUTH_SECRET`  | Cadena aleatoria para firmar las sesiones (mínimo 16 chars). |
+| `UPLOADS_DIR`  | Carpeta de las fotos de las capturas (por omisión `./uploads`). |
 
 ### Datos iniciales
 
