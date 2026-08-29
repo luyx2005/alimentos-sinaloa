@@ -177,12 +177,12 @@ export async function buildPatientsStaffReport(options: {
   };
 }
 
+/** Cada servicio incluye la colación que se sirvió con él. */
 export type ServiceRow = {
   hospital: HospitalDTO;
   breakfast: number;
   lunch: number;
   dinner: number;
-  snack: number;
   total: number;
 };
 
@@ -194,7 +194,6 @@ export type ServiceReport = {
     breakfast: number;
     lunch: number;
     dinner: number;
-    snack: number;
     total: number;
   };
 };
@@ -223,15 +222,7 @@ export async function buildServiceReport(options: {
       const breakfast = sum(hospitalRecords.map((r) => r.totals.breakfastTotal));
       const lunch = sum(hospitalRecords.map((r) => r.totals.lunchTotal));
       const dinner = sum(hospitalRecords.map((r) => r.totals.dinnerTotal));
-      const snack = sum(hospitalRecords.map((r) => r.totals.snack));
-      return {
-        hospital,
-        breakfast,
-        lunch,
-        dinner,
-        snack,
-        total: breakfast + lunch + dinner + snack,
-      };
+      return { hospital, breakfast, lunch, dinner, total: breakfast + lunch + dinner };
     });
 
   return {
@@ -242,7 +233,6 @@ export async function buildServiceReport(options: {
       breakfast: sum(rows.map((r) => r.breakfast)),
       lunch: sum(rows.map((r) => r.lunch)),
       dinner: sum(rows.map((r) => r.dinner)),
-      snack: sum(rows.map((r) => r.snack)),
       total: sum(rows.map((r) => r.total)),
     },
   };
@@ -261,7 +251,6 @@ const SERVICE_NAMES: Record<string, string> = {
   breakfast: "Desayuno",
   lunch: "Comida",
   dinner: "Cena",
-  snack: "Colación",
 };
 
 export async function buildPendingReport(options: {

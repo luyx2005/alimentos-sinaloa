@@ -16,11 +16,13 @@ export type SaveRecordResult = {
 const QUANTITY_FIELDS = [
   "breakfastPatients",
   "breakfastStaff",
+  "breakfastSnack",
   "lunchPatients",
   "lunchStaff",
+  "lunchSnack",
   "dinnerPatients",
   "dinnerStaff",
-  "snackQuantity",
+  "dinnerSnack",
 ] as const;
 
 type QuantityField = (typeof QUANTITY_FIELDS)[number];
@@ -38,7 +40,7 @@ function parseQuantity(value: FormDataEntryValue | null): number | null | "inval
 function revalidateAll() {
   revalidatePath("/");
   revalidatePath("/captura");
-  revalidatePath("/pendientes");
+  revalidatePath("/no-completados");
   revalidatePath("/reportes");
 }
 

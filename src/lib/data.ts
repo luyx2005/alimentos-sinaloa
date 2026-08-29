@@ -47,11 +47,13 @@ export type RecordDTO = {
   serviceDate: string;
   breakfastPatients: number | null;
   breakfastStaff: number | null;
+  breakfastSnack: number | null;
   lunchPatients: number | null;
   lunchStaff: number | null;
+  lunchSnack: number | null;
   dinnerPatients: number | null;
   dinnerStaff: number | null;
-  snackQuantity: number | null;
+  dinnerSnack: number | null;
   appliedPrice: number;
   totals: Totals;
   status: CaptureStatus;
@@ -64,11 +66,13 @@ type RecordRow = {
   serviceDate: Date;
   breakfastPatients: number | null;
   breakfastStaff: number | null;
+  breakfastSnack: number | null;
   lunchPatients: number | null;
   lunchStaff: number | null;
+  lunchSnack: number | null;
   dinnerPatients: number | null;
   dinnerStaff: number | null;
-  snackQuantity: number | null;
+  dinnerSnack: number | null;
   appliedPrice: unknown;
   hospital: { id: number; name: string; companyId: number; company: { name: string } };
 };
@@ -77,11 +81,13 @@ function toRecordDTO(row: RecordRow): RecordDTO {
   const quantities = {
     breakfastPatients: row.breakfastPatients,
     breakfastStaff: row.breakfastStaff,
+    breakfastSnack: row.breakfastSnack,
     lunchPatients: row.lunchPatients,
     lunchStaff: row.lunchStaff,
+    lunchSnack: row.lunchSnack,
     dinnerPatients: row.dinnerPatients,
     dinnerStaff: row.dinnerStaff,
-    snackQuantity: row.snackQuantity,
+    dinnerSnack: row.dinnerSnack,
   };
   const appliedPrice = Number(row.appliedPrice);
 
@@ -251,7 +257,7 @@ export async function hospitalStatusesForDate(options: {
       hospital,
       record,
       status: record ? record.status : "sin_captura",
-      missing: record ? record.missing : ["breakfast", "lunch", "dinner", "snack"],
+      missing: record ? record.missing : ["breakfast", "lunch", "dinner"],
     };
   });
 }

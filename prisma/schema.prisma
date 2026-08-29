@@ -63,17 +63,20 @@ model User {
 
 /// Un registro por hospital + fecha de servicio.
 /// Las cantidades son opcionales para poder distinguir "no capturado" (null) de "cero".
+/// La colación se registra dentro de cada servicio, junto a pacientes y personal.
 model DailyRecord {
   id                Int      @id @default(autoincrement())
   hospitalId        Int      @map("hospital_id")
   serviceDate       DateTime @map("service_date") @db.Date
   breakfastPatients Int?     @map("breakfast_patients")
   breakfastStaff    Int?     @map("breakfast_staff")
+  breakfastSnack    Int?     @map("breakfast_snack")
   lunchPatients     Int?     @map("lunch_patients")
   lunchStaff        Int?     @map("lunch_staff")
+  lunchSnack        Int?     @map("lunch_snack")
   dinnerPatients    Int?     @map("dinner_patients")
   dinnerStaff       Int?     @map("dinner_staff")
-  snackQuantity     Int?     @map("snack_quantity")
+  dinnerSnack       Int?     @map("dinner_snack")
   appliedPrice      Decimal  @map("applied_price") @db.Decimal(10, 2)
   active            Boolean  @default(true)
   createdAt         DateTime @default(now()) @map("created_at")

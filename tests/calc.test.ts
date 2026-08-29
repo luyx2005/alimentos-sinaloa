@@ -11,20 +11,21 @@ import {
 const full: Quantities = {
   breakfastPatients: 10,
   breakfastStaff: 5,
+  breakfastSnack: 2,
   lunchPatients: 20,
   lunchStaff: 5,
+  lunchSnack: 1,
   dinnerPatients: 10,
   dinnerStaff: 0,
-  snackQuantity: 5,
+  dinnerSnack: 2,
 };
 
-test("totales e importe", () => {
+test("cada servicio incluye su colación en el total", () => {
   const totals = computeTotals(full, 100);
-  assert.equal(totals.breakfastTotal, 15);
-  assert.equal(totals.lunchTotal, 25);
-  assert.equal(totals.dinnerTotal, 10);
+  assert.equal(totals.breakfastTotal, 17);
+  assert.equal(totals.lunchTotal, 26);
+  assert.equal(totals.dinnerTotal, 12);
   assert.equal(totals.snack, 5);
-  assert.equal(totals.mainServices, 50);
   assert.equal(totals.totalPatients, 40);
   assert.equal(totals.totalStaff, 10);
   assert.equal(totals.totalServed, 55);
@@ -32,30 +33,32 @@ test("totales e importe", () => {
 });
 
 test("la colación no se suma a pacientes ni a personal", () => {
-  const totals = computeTotals({ ...full, snackQuantity: 1000 }, 1);
+  const totals = computeTotals({ ...full, lunchSnack: 1000 }, 1);
   assert.equal(totals.totalPatients, 40);
   assert.equal(totals.totalStaff, 10);
-  assert.equal(totals.totalServed, 1050);
+  assert.equal(totals.totalServed, 1054);
 });
 
-test("cero es un valor válido y no significa pendiente", () => {
+test("cero es un valor válido y no significa faltante", () => {
   const zeros: Quantities = {
     breakfastPatients: 0,
     breakfastStaff: 0,
+    breakfastSnack: 0,
     lunchPatients: 0,
     lunchStaff: 0,
+    lunchSnack: 0,
     dinnerPatients: 0,
     dinnerStaff: 0,
-    snackQuantity: 0,
+    dinnerSnack: 0,
   };
   assert.deepEqual(missingServices(zeros), []);
   assert.equal(captureStatus(zeros), "completo");
   assert.equal(computeTotals(zeros, 85).amount, 0);
 });
 
-test("un registro sin colación queda incompleto", () => {
-  const partial: Quantities = { ...full, snackQuantity: null };
-  assert.deepEqual(missingServices(partial), ["snack"]);
+test("un servicio sin colación queda incompleto", () => {
+  const partial: Quantities = { ...full, dinnerSnack: null };
+  assert.deepEqual(missingServices(partial), ["dinner"]);
   assert.equal(captureStatus(partial), "incompleto");
 });
 

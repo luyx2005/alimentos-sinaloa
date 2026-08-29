@@ -33,23 +33,57 @@ import type { HospitalDTO, RecordDTO } from "@/lib/data";
 type FieldName =
   | "breakfastPatients"
   | "breakfastStaff"
+  | "breakfastSnack"
   | "lunchPatients"
   | "lunchStaff"
+  | "lunchSnack"
   | "dinnerPatients"
   | "dinnerStaff"
-  | "snackQuantity";
+  | "dinnerSnack";
 
 type FormValues = Record<FieldName, string>;
 
 const EMPTY: FormValues = {
   breakfastPatients: "",
   breakfastStaff: "",
+  breakfastSnack: "",
   lunchPatients: "",
   lunchStaff: "",
+  lunchSnack: "",
   dinnerPatients: "",
   dinnerStaff: "",
-  snackQuantity: "",
+  dinnerSnack: "",
 };
+
+const SERVICES = [
+  {
+    title: "Desayuno",
+    description: "Pacientes, personal y colación servidos en el desayuno.",
+    patients: "breakfastPatients",
+    staff: "breakfastStaff",
+    snack: "breakfastSnack",
+  },
+  {
+    title: "Comida",
+    description: "Pacientes, personal y colación servidos en la comida.",
+    patients: "lunchPatients",
+    staff: "lunchStaff",
+    snack: "lunchSnack",
+  },
+  {
+    title: "Cena",
+    description: "Pacientes, personal y colación servidos en la cena.",
+    patients: "dinnerPatients",
+    staff: "dinnerStaff",
+    snack: "dinnerSnack",
+  },
+] as const satisfies readonly {
+  title: string;
+  description: string;
+  patients: FieldName;
+  staff: FieldName;
+  snack: FieldName;
+}[];
 
 function toFormValues(record: RecordDTO | null): FormValues {
   if (!record) return EMPTY;
@@ -57,11 +91,13 @@ function toFormValues(record: RecordDTO | null): FormValues {
   return {
     breakfastPatients: value(record.breakfastPatients),
     breakfastStaff: value(record.breakfastStaff),
+    breakfastSnack: value(record.breakfastSnack),
     lunchPatients: value(record.lunchPatients),
     lunchStaff: value(record.lunchStaff),
+    lunchSnack: value(record.lunchSnack),
     dinnerPatients: value(record.dinnerPatients),
     dinnerStaff: value(record.dinnerStaff),
-    snackQuantity: value(record.snackQuantity),
+    dinnerSnack: value(record.dinnerSnack),
   };
 }
 
@@ -128,11 +164,13 @@ export function CaptureForm({
         {
           breakfastPatients: toNumberOrNull(values.breakfastPatients),
           breakfastStaff: toNumberOrNull(values.breakfastStaff),
+          breakfastSnack: toNumberOrNull(values.breakfastSnack),
           lunchPatients: toNumberOrNull(values.lunchPatients),
           lunchStaff: toNumberOrNull(values.lunchStaff),
+          lunchSnack: toNumberOrNull(values.lunchSnack),
           dinnerPatients: toNumberOrNull(values.dinnerPatients),
           dinnerStaff: toNumberOrNull(values.dinnerStaff),
-          snackQuantity: toNumberOrNull(values.snackQuantity),
+          dinnerSnack: toNumberOrNull(values.dinnerSnack),
         },
         appliedPrice,
       ),
@@ -189,85 +227,34 @@ export function CaptureForm({
   return (
     <form onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <div className="flex flex-col gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Desayuno</CardTitle>
-            <CardDescription>Cantidades servidas de desayuno.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <QuantityField
-              id="breakfastPatients"
-              label="Pacientes"
-              value={values.breakfastPatients}
-              onChange={setField("breakfastPatients")}
-            />
-            <QuantityField
-              id="breakfastStaff"
-              label="Personal"
-              value={values.breakfastStaff}
-              onChange={setField("breakfastStaff")}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Comida</CardTitle>
-            <CardDescription>Cantidades servidas de comida.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <QuantityField
-              id="lunchPatients"
-              label="Pacientes"
-              value={values.lunchPatients}
-              onChange={setField("lunchPatients")}
-            />
-            <QuantityField
-              id="lunchStaff"
-              label="Personal"
-              value={values.lunchStaff}
-              onChange={setField("lunchStaff")}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Cena</CardTitle>
-            <CardDescription>Cantidades servidas de cena.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <QuantityField
-              id="dinnerPatients"
-              label="Pacientes"
-              value={values.dinnerPatients}
-              onChange={setField("dinnerPatients")}
-            />
-            <QuantityField
-              id="dinnerStaff"
-              label="Personal"
-              value={values.dinnerStaff}
-              onChange={setField("dinnerStaff")}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Colación</CardTitle>
-            <CardDescription>
-              Cantidad total. No se divide entre pacientes y personal.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <QuantityField
-              id="snackQuantity"
-              label="Cantidad"
-              value={values.snackQuantity}
-              onChange={setField("snackQuantity")}
-            />
-          </CardContent>
-        </Card>
+        {SERVICES.map((service) => (
+          <Card key={service.title}>
+            <CardHeader>
+              <CardTitle className="text-base">{service.title}</CardTitle>
+              <CardDescription>{service.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              <QuantityField
+                id={service.patients}
+                label="Pacientes"
+                value={values[service.patients]}
+                onChange={setField(service.patients)}
+              />
+              <QuantityField
+                id={service.staff}
+                label="Personal"
+                value={values[service.staff]}
+                onChange={setField(service.staff)}
+              />
+              <QuantityField
+                id={service.snack}
+                label="Colación"
+                value={values[service.snack]}
+                onChange={setField(service.snack)}
+              />
+            </CardContent>
+          </Card>
+        ))}
 
         <p className="flex items-start gap-2 text-xs text-muted-foreground">
           <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
@@ -286,10 +273,10 @@ export function CaptureForm({
             <Row label="Desayuno total" value={formatNumber(totals.breakfastTotal)} />
             <Row label="Comida total" value={formatNumber(totals.lunchTotal)} />
             <Row label="Cena total" value={formatNumber(totals.dinnerTotal)} />
-            <Row label="Colación" value={formatNumber(totals.snack)} />
             <Separator className="my-1" />
             <Row label="Total pacientes" value={formatNumber(totals.totalPatients)} />
             <Row label="Total personal" value={formatNumber(totals.totalStaff)} />
+            <Row label="Total colaciones" value={formatNumber(totals.snack)} />
             <Separator className="my-1" />
             <Row
               label="Total servido"
