@@ -62,6 +62,12 @@ test("un servicio sin colación queda incompleto", () => {
   assert.equal(captureStatus(partial), "incompleto");
 });
 
+test("sin colación, la captura está completa si hay pacientes y personal", () => {
+  const withoutSnack: Quantities = { ...full, dinnerSnack: null, lunchSnack: null, breakfastSnack: null };
+  assert.deepEqual(missingServices(withoutSnack, { usesSnack: false }), []);
+  assert.equal(captureStatus(withoutSnack, { usesSnack: false }), "completo");
+});
+
 test("sin registro el estado es sin captura", () => {
   assert.equal(captureStatus(null), "sin_captura");
 });

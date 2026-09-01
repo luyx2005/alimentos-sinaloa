@@ -21,6 +21,8 @@ model Company {
   id                Int               @id @default(autoincrement())
   name              String
   paymentPeriodType PaymentPeriodType @map("payment_period_type")
+  /// Si es false, la captura no pide colación (caso WWPL).
+  usesSnack         Boolean           @default(true) @map("uses_snack")
   active            Boolean           @default(true)
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")

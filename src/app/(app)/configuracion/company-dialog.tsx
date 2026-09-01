@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { saveCompany } from "@/app/(app)/configuracion/actions";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -37,11 +38,13 @@ export function CompanyDialog({
   const [periodType, setPeriodType] = useState(
     company?.paymentPeriodType ?? "weekly",
   );
+  const [usesSnack, setUsesSnack] = useState(company?.usesSnack ?? true);
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     formData.set("paymentPeriodType", periodType);
+    formData.set("usesSnack", usesSnack ? "1" : "0");
     startTransition(async () => {
       const result = await saveCompany(formData);
       if (result.ok) {
@@ -54,7 +57,13 @@ export function CompanyDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(next) => {
+      setOpen(next);
+      if (next) {
+        setPeriodType(company?.paymentPeriodType ?? "weekly");
+        setUsesSnack(company?.usesSnack ?? true);
+      }
+    }}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -96,6 +105,23 @@ export function CompanyDialog({
                 </SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex items-start gap-3 rounded-lg border p-3">
+            <Checkbox
+              id="company-uses-snack"
+              checked={usesSnack}
+              onCheckedChange={(checked) => setUsesSnack(checked === true)}
+            />
+            <div className="grid gap-1">
+              <Label htmlFor="company-uses-snack" className="leading-none">
+                Maneja colación
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Si se desactiva, la captura de sus hospitales solo pide pacientes y
+                personal. WWPL no maneja colación.
+              </p>
+            </div>
           </div>
 
           <DialogFooter>

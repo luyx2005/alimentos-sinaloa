@@ -18,6 +18,7 @@ export type CompanyDTO = {
   id: number;
   name: string;
   paymentPeriodType: PaymentPeriodType;
+  usesSnack: boolean;
   active: boolean;
 };
 
@@ -25,6 +26,7 @@ export type HospitalDTO = {
   id: number;
   companyId: number;
   companyName: string;
+  usesSnack: boolean;
   name: string;
   state: string;
   price: number;
@@ -83,7 +85,7 @@ type RecordRow = {
   dinnerImage: string | null;
   reportImage: string | null;
   appliedPrice: unknown;
-  hospital: { id: number; name: string; companyId: number; company: { name: string } };
+  hospital: { id: number; name: string; companyId: number; company: { name: string; usesSnack: boolean } };
 };
 
 function toRecordDTO(row: RecordRow): RecordDTO {
@@ -99,6 +101,7 @@ function toRecordDTO(row: RecordRow): RecordDTO {
     dinnerSnack: row.dinnerSnack,
   };
   const appliedPrice = Number(row.appliedPrice);
+  const usesSnack = row.hospital.company.usesSnack;
 
   return {
     id: row.id,
@@ -116,37 +119,43 @@ function toRecordDTO(row: RecordRow): RecordDTO {
     },
     appliedPrice,
     totals: computeTotals(quantities, appliedPrice),
-    status: captureStatus(quantities),
-    missing: missingServices(quantities),
+    status: captureStatus(quantities, { usesSnack }),
+    missing: missingServices(quantities, { usesSnack }),
   };
 }
 
 const recordInclude = {
-  hospital: { include: { company: { select: { name: true } } } },
+  hospital: { include: { company: { select: { name: true, usesSnack: true } } } },
 } as const;
+
+function toCompanyDTO(row: {
+  id: number;
+  name: string;
+  paymentPeriodType: string;
+  usesSnack: boolean;
+  active: boolean;
+}): CompanyDTO {
+  return {
+    id: row.id,
+    name: row.name,
+    paymentPeriodType: row.paymentPeriodType as PaymentPeriodType,
+    usesSnack: row.usesSnack,
+    active: row.active,
+  };
+}
 
 export async function listCompanies(activeOnly = false): Promise<CompanyDTO[]> {
   const rows = await prisma.company.findMany({
     where: activeOnly ? { active: true } : undefined,
     orderBy: { name: "asc" },
   });
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    paymentPeriodType: row.paymentPeriodType as PaymentPeriodType,
-    active: row.active,
-  }));
+  return rows.map(toCompanyDTO);
 }
 
 export async function getCompany(id: number): Promise<CompanyDTO | null> {
   const row = await prisma.company.findUnique({ where: { id } });
   if (!row) return null;
-  return {
-    id: row.id,
-    name: row.name,
-    paymentPeriodType: row.paymentPeriodType as PaymentPeriodType,
-    active: row.active,
-  };
+  return toCompanyDTO(row);
 }
 
 export async function listHospitals(options?: {
@@ -159,7 +168,7 @@ export async function listHospitals(options?: {
       ...(options?.activeOnly ? { active: true } : {}),
     },
     include: {
-      company: { select: { name: true } },
+      company: { select: { name: true, usesSnack: true } },
       _count: { select: { dailyRecords: true } },
     },
     orderBy: [{ companyId: "asc" }, { name: "asc" }],
@@ -168,6 +177,7 @@ export async function listHospitals(options?: {
     id: row.id,
     companyId: row.companyId,
     companyName: row.company.name,
+    usesSnack: row.company.usesSnack,
     name: row.name,
     state: row.state,
     price: Number(row.price),
@@ -180,7 +190,7 @@ export async function getHospital(id: number): Promise<HospitalDTO | null> {
   const row = await prisma.hospital.findUnique({
     where: { id },
     include: {
-      company: { select: { name: true } },
+      company: { select: { name: true, usesSnack: true } },
       _count: { select: { dailyRecords: true } },
     },
   });
@@ -189,6 +199,7 @@ export async function getHospital(id: number): Promise<HospitalDTO | null> {
     id: row.id,
     companyId: row.companyId,
     companyName: row.company.name,
+    usesSnack: row.company.usesSnack,
     name: row.name,
     state: row.state,
     price: Number(row.price),

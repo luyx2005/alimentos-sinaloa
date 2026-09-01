@@ -90,8 +90,17 @@ export async function saveRecord(formData: FormData): Promise<SaveRecordResult> 
     files[field] = file;
   }
 
-  const hospital = await prisma.hospital.findUnique({ where: { id: hospitalId } });
+  const hospital = await prisma.hospital.findUnique({
+    where: { id: hospitalId },
+    include: { company: { select: { usesSnack: true } } },
+  });
   if (!hospital) return { ok: false, message: "Hospital no encontrado." };
+
+  if (!hospital.company.usesSnack) {
+    quantities.breakfastSnack = 0;
+    quantities.lunchSnack = 0;
+    quantities.dinnerSnack = 0;
+  }
 
   const date = parseISODate(serviceDate);
   const existing = await prisma.dailyRecord.findFirst({

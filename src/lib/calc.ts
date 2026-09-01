@@ -87,21 +87,30 @@ export function addTotals(a: Totals, b: Totals): Totals {
 }
 
 /**
- * Un servicio está capturado cuando tiene sus tres cantidades; CERO es un valor válido.
+ * Cada servicio tiene pacientes y personal. Si la empresa maneja colación, también
+ * esa cantidad. Un servicio está capturado cuando tiene las cantidades que aplica;
+ * CERO es un valor válido.
  */
-export function missingServices(q: Quantities): ServiceKey[] {
+export function missingServices(
+  q: Quantities,
+  options: { usesSnack?: boolean } = {},
+): ServiceKey[] {
+  const usesSnack = options.usesSnack !== false;
   const missing: ServiceKey[] = [];
-  if (
-    q.breakfastPatients === null ||
-    q.breakfastStaff === null ||
-    q.breakfastSnack === null
-  ) {
+  const incomplete = (
+    patients: number | null,
+    staff: number | null,
+    snack: number | null,
+  ) =>
+    patients === null || staff === null || (usesSnack && snack === null);
+
+  if (incomplete(q.breakfastPatients, q.breakfastStaff, q.breakfastSnack)) {
     missing.push("breakfast");
   }
-  if (q.lunchPatients === null || q.lunchStaff === null || q.lunchSnack === null) {
+  if (incomplete(q.lunchPatients, q.lunchStaff, q.lunchSnack)) {
     missing.push("lunch");
   }
-  if (q.dinnerPatients === null || q.dinnerStaff === null || q.dinnerSnack === null) {
+  if (incomplete(q.dinnerPatients, q.dinnerStaff, q.dinnerSnack)) {
     missing.push("dinner");
   }
   return missing;
@@ -109,9 +118,12 @@ export function missingServices(q: Quantities): ServiceKey[] {
 
 export type CaptureStatus = "completo" | "incompleto" | "sin_captura";
 
-export function captureStatus(q: Quantities | null): CaptureStatus {
+export function captureStatus(
+  q: Quantities | null,
+  options: { usesSnack?: boolean } = {},
+): CaptureStatus {
   if (!q) return "sin_captura";
-  return missingServices(q).length === 0 ? "completo" : "incompleto";
+  return missingServices(q, options).length === 0 ? "completo" : "incompleto";
 }
 
 export const STATUS_LABELS: Record<CaptureStatus, string> = {

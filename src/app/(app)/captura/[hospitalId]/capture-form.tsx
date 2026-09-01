@@ -60,7 +60,7 @@ const EMPTY: FormValues = {
 const SERVICES = [
   {
     title: "Desayuno",
-    description: "Pacientes, personal y colación servidos en el desayuno.",
+    meal: "el desayuno",
     patients: "breakfastPatients",
     staff: "breakfastStaff",
     snack: "breakfastSnack",
@@ -68,7 +68,7 @@ const SERVICES = [
   },
   {
     title: "Comida",
-    description: "Pacientes, personal y colación servidos en la comida.",
+    meal: "la comida",
     patients: "lunchPatients",
     staff: "lunchStaff",
     snack: "lunchSnack",
@@ -76,7 +76,7 @@ const SERVICES = [
   },
   {
     title: "Cena",
-    description: "Pacientes, personal y colación servidos en la cena.",
+    meal: "la cena",
     patients: "dinnerPatients",
     staff: "dinnerStaff",
     snack: "dinnerSnack",
@@ -84,7 +84,7 @@ const SERVICES = [
   },
 ] as const satisfies readonly {
   title: string;
-  description: string;
+  meal: string;
   patients: FieldName;
   staff: FieldName;
   snack: FieldName;
@@ -167,6 +167,7 @@ export function CaptureForm({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const savedImages = record?.images;
+  const usesSnack = hospital.usesSnack;
   const hasReportImage = Boolean(images.reportImage || savedImages?.reportImage);
   // La foto es obligatoria en cada captura nueva. Las capturas registradas antes de
   // esta función se pueden seguir corrigiendo, pidiendo la foto sin bloquear.
@@ -189,17 +190,17 @@ export function CaptureForm({
         {
           breakfastPatients: toNumberOrNull(values.breakfastPatients),
           breakfastStaff: toNumberOrNull(values.breakfastStaff),
-          breakfastSnack: toNumberOrNull(values.breakfastSnack),
+          breakfastSnack: usesSnack ? toNumberOrNull(values.breakfastSnack) : 0,
           lunchPatients: toNumberOrNull(values.lunchPatients),
           lunchStaff: toNumberOrNull(values.lunchStaff),
-          lunchSnack: toNumberOrNull(values.lunchSnack),
+          lunchSnack: usesSnack ? toNumberOrNull(values.lunchSnack) : 0,
           dinnerPatients: toNumberOrNull(values.dinnerPatients),
           dinnerStaff: toNumberOrNull(values.dinnerStaff),
-          dinnerSnack: toNumberOrNull(values.dinnerSnack),
+          dinnerSnack: usesSnack ? toNumberOrNull(values.dinnerSnack) : 0,
         },
         appliedPrice,
       ),
-    [values, appliedPrice],
+    [values, appliedPrice, usesSnack],
   );
 
   const setField = (field: FieldName) => (value: string) =>
@@ -216,7 +217,15 @@ export function CaptureForm({
     formData.set("hospitalId", String(hospital.id));
     formData.set("serviceDate", serviceDate);
     if (record) formData.set("recordId", String(record.id));
-    for (const [field, value] of Object.entries(values)) formData.set(field, value);
+    for (const [field, value] of Object.entries(values)) {
+      if (
+        !usesSnack &&
+        (field === "breakfastSnack" || field === "lunchSnack" || field === "dinnerSnack")
+      ) {
+        continue;
+      }
+      formData.set(field, value);
+    }
     for (const [field, file] of Object.entries(images)) formData.set(field, file);
 
     startTransition(async () => {
@@ -262,9 +271,19 @@ export function CaptureForm({
           <Card key={service.title}>
             <CardHeader>
               <CardTitle className="text-base">{service.title}</CardTitle>
-              <CardDescription>{service.description}</CardDescription>
+              <CardDescription>
+                {usesSnack
+                  ? `Pacientes, personal y colación servidos en ${service.meal}.`
+                  : `Pacientes y personal servidos en ${service.meal}.`}
+              </CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <CardContent
+              className={
+                usesSnack
+                  ? "grid grid-cols-2 gap-4 sm:grid-cols-3"
+                  : "grid grid-cols-2 gap-4"
+              }
+            >
               <QuantityField
                 id={service.patients}
                 label="Pacientes"
@@ -277,12 +296,14 @@ export function CaptureForm({
                 value={values[service.staff]}
                 onChange={setField(service.staff)}
               />
-              <QuantityField
-                id={service.snack}
-                label="Colación"
-                value={values[service.snack]}
-                onChange={setField(service.snack)}
-              />
+              {usesSnack ? (
+                <QuantityField
+                  id={service.snack}
+                  label="Colación"
+                  value={values[service.snack]}
+                  onChange={setField(service.snack)}
+                />
+              ) : null}
               <PhotoField
                 field={service.image}
                 label={`Foto de ${service.title.toLowerCase()} (opcional)`}
@@ -293,7 +314,7 @@ export function CaptureForm({
                     : null
                 }
                 onSelect={selectImage(service.image)}
-                className="col-span-2 sm:col-span-3"
+                className={usesSnack ? "col-span-2 sm:col-span-3" : "col-span-2"}
               />
             </CardContent>
           </Card>
@@ -344,7 +365,9 @@ export function CaptureForm({
             <Separator className="my-1" />
             <Row label="Total pacientes" value={formatNumber(totals.totalPatients)} />
             <Row label="Total personal" value={formatNumber(totals.totalStaff)} />
-            <Row label="Total colaciones" value={formatNumber(totals.snack)} />
+            {usesSnack ? (
+              <Row label="Total colaciones" value={formatNumber(totals.snack)} />
+            ) : null}
             <Separator className="my-1" />
             <Row
               label="Total servido"

@@ -24,12 +24,14 @@ a Excel y PDF.
   colación.
 - La **colación se captura dentro de cada servicio** (desayuno, comida y cena), junto a
   pacientes y personal: no es un servicio aparte. No se suma a pacientes ni a personal,
-  pero sí al total de su servicio y por lo tanto al importe.
+  pero sí al total de su servicio y por lo tanto al importe. **WWPL no maneja colación**:
+  en la captura de sus hospitales no aparecen esos campos y el día está completo con
+  pacientes y personal. En Configuración se puede activar o desactivar por empresa.
 - Un solo registro activo por hospital + fecha de servicio (índice único parcial en
   PostgreSQL, más validación en la aplicación).
 - **Cero es un valor válido**: "no capturado" (campo vacío) y "0" son cosas distintas. Un
-  registro está completo cuando desayuno, comida y cena tienen sus tres cantidades
-  (pacientes, personal y colación).
+  registro está completo cuando desayuno, comida y cena tienen pacientes y personal; si la
+  empresa maneja colación, también esa cantidad.
 - Cada servicio admite **una foto opcional** (la charola, la lista firmada, lo que
   documente el turno) y toda captura nueva exige la **foto del reporte diario**. Las
   capturas registradas antes de esta función se pueden seguir corrigiendo sin foto: la

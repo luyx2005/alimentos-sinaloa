@@ -124,6 +124,12 @@ try {
     "2. Crear empresa quincenal",
     (await filaEmpresa.textContent())?.includes("Quincenal") ?? false,
   );
+  check(
+    "2c. WWPL no maneja colación",
+    ((await page.getByRole("row", { name: /WWPL/ }).first().textContent()) ?? "").includes(
+      "No",
+    ),
+  );
 
   // 3. Crear hospital
   await page.getByRole("tab", { name: "Hospitales" }).click();
@@ -135,6 +141,7 @@ try {
   await page.getByRole("option", { name: "Sinaloa", exact: true }).click();
   await page.locator("#hospital-price").fill("100");
   await page.getByRole("button", { name: "Guardar" }).click();
+  await page.getByRole("tab", { name: "Hospitales" }).click();
   await page.getByRole("cell", { name: HOSPITAL, exact: true }).waitFor();
   const filaHospital = page.getByRole("row", { name: HOSPITAL });
   const textoHospital = (await filaHospital.textContent()) ?? "";
@@ -157,6 +164,7 @@ try {
   await page.getByRole("option", { name: "Capturista" }).click();
   await page.locator("#user-password").fill("test1234");
   await page.getByRole("button", { name: "Guardar" }).click();
+  await page.getByRole("tab", { name: "Usuarios" }).click();
   await page.getByRole("cell", { name: `Ana Test ${sufijo}` }).waitFor();
   const filaUsuario = page.getByRole("row", { name: `Ana Test ${sufijo}` });
   check(
@@ -184,6 +192,21 @@ try {
       "Sin captura",
     ) ?? false,
   );
+
+  await page.locator("#filter-empresa").click();
+  await page.getByRole("option", { name: "WWPL", exact: true }).click();
+  await page.getByRole("row", { name: HOSPITAL }).waitFor({ state: "detached" });
+  await page.getByRole("link", { name: /Capturar|Editar/ }).first().click();
+  await page.waitForURL(/\/captura\/\d+/);
+  check(
+    "5bb. En WWPL no aparecen campos de colación",
+    (await page.locator("#breakfastSnack").count()) === 0 &&
+      (await page.getByText("Total colaciones").count()) === 0,
+  );
+  await page.goto(`${BASE}/captura?fecha=2026-08-20`);
+  await page.locator("#filter-empresa").click();
+  await page.getByRole("option", { name: EMPRESA }).click();
+  await page.getByRole("row", { name: HOSPITAL }).waitFor();
 
   await page.getByRole("link", { name: "Capturar" }).first().click();
   await page.waitForURL(/\/captura\/\d+\?fecha=2026-08-20/);

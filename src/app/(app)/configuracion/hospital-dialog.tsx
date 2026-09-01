@@ -65,8 +65,8 @@ export function HospitalDialog({
         <DialogHeader>
           <DialogTitle>{hospital ? "Editar hospital" : "Nuevo hospital"}</DialogTitle>
           <DialogDescription>
-            El precio se aplica igual a desayuno, comida, cena y colación. Al cambiarlo
-            no se modifican las capturas ya guardadas.
+            El precio se aplica igual a todo lo servido. Al cambiarlo no se
+            modifican las capturas ya guardadas.
           </DialogDescription>
         </DialogHeader>
 

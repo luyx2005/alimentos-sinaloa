@@ -40,6 +40,7 @@ export async function saveCompany(formData: FormData): Promise<ActionResult> {
   const id = Number(formData.get("id") ?? 0);
   const name = String(formData.get("name") ?? "").trim();
   const paymentPeriodType = String(formData.get("paymentPeriodType") ?? "");
+  const usesSnack = String(formData.get("usesSnack") ?? "1") !== "0";
 
   if (!name) return { ok: false, message: "El nombre de la empresa es obligatorio." };
   if (paymentPeriodType !== "weekly" && paymentPeriodType !== "biweekly") {
@@ -47,9 +48,12 @@ export async function saveCompany(formData: FormData): Promise<ActionResult> {
   }
 
   if (id) {
-    await prisma.company.update({ where: { id }, data: { name, paymentPeriodType } });
+    await prisma.company.update({
+      where: { id },
+      data: { name, paymentPeriodType, usesSnack },
+    });
   } else {
-    await prisma.company.create({ data: { name, paymentPeriodType } });
+    await prisma.company.create({ data: { name, paymentPeriodType, usesSnack } });
   }
 
   revalidateAll();

@@ -103,6 +103,7 @@ export default async function ConfiguracionPage() {
                 columns={[
                   { key: "name", label: "Empresa" },
                   { key: "period", label: "Periodicidad" },
+                  { key: "snack", label: "Colación" },
                   { key: "hospitals", label: "Hospitales" },
                   { key: "active", label: "Estado" },
                   { key: "actions", label: "Acciones", alignRight: true, sortable: false },
@@ -117,6 +118,7 @@ export default async function ConfiguracionPage() {
                     values: {
                       name: company.name,
                       period: PERIOD_LABELS[company.paymentPeriodType],
+                      snack: company.usesSnack ? "Sí" : "No",
                       hospitals: hospitalCount,
                       active: company.active,
                     },
@@ -124,6 +126,7 @@ export default async function ConfiguracionPage() {
                       <>
                         <TableCell className="font-medium">{company.name}</TableCell>
                         <TableCell>{PERIOD_LABELS[company.paymentPeriodType]}</TableCell>
+                        <TableCell>{company.usesSnack ? "Sí" : "No"}</TableCell>
                         <TableCell>{hospitalCount}</TableCell>
                         <TableCell>
                           <ActiveBadge active={company.active} />
