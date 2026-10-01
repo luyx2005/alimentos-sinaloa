@@ -115,6 +115,33 @@ Para respaldar el sistema hay que copiar la base de datos **y** esa carpeta.
 | `AUTH_SECRET`  | Cadena aleatoria para firmar las sesiones (mínimo 16 chars). |
 | `UPLOADS_DIR`  | Carpeta de las fotos de las capturas (por omisión `./uploads`). |
 
+### Despliegue en Vercel
+
+El proyecto es una aplicación **con PostgreSQL**: Vercel solo sirve el frontend/API;
+la base tiene que estar en un Postgres alojado (Neon, Supabase, Vercel Postgres, etc.).
+
+1. En el proyecto de Vercel → **Settings → Environment Variables**, agrega:
+
+   - `DATABASE_URL` — cadena `postgresql://…` de tu base alojada (Production y Preview).
+   - `AUTH_SECRET` — cadena aleatoria de al menos 16 caracteres.
+
+2. Contra esa misma base, aplica el esquema una vez (en local o en CI):
+
+   ```bash
+   DATABASE_URL="postgresql://…" npm run db:deploy
+   DATABASE_URL="postgresql://…" npm run db:seed
+   ```
+
+3. Vuelve a desplegar (un push a `main` o *Redeploy* en el dashboard).
+
+El script `vercel-build` genera el cliente de Prisma y luego corre `next build`.
+Sin `DATABASE_URL` el **build** ya no se cae, pero login, captura y reportes
+fallan en tiempo de ejecución hasta que la variable esté definida.
+
+Las fotos de las capturas se guardan en disco (`./uploads`). En Vercel ese disco
+es efímero: se pierden entre despliegues. Para producción hay que copiar también
+esa carpeta o usar un almacenamiento persistente.
+
 ### Datos iniciales
 
 El seed crea dos empresas (Empresa A, semanal, con 4 hospitales; Empresa B, quincenal, con

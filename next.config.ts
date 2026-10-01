@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   // de la red o desde una tablet; sin esta lista Next rechaza con 403 los chunks que el
   // navegador pide en modo CORS y la aplicación se queda sin hidratar.
   allowedDevOrigins: ["localhost", "127.0.0.1", "0.0.0.0"],
+  // Prisma 7 + pg deben resolverse en runtime de Node, no empaquetarse en el bundle.
+  serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg"],
   experimental: {
     // Las capturas envían fotos del reporte diario junto con las cantidades.
     serverActions: { bodySizeLimit: "12mb" },

@@ -32,8 +32,10 @@ const EXTENSIONS: Record<string, string> = {
 
 export const ACCEPTED_IMAGE_TYPES = Object.keys(EXTENSIONS);
 
+const DEFAULT_UPLOADS_DIR = path.join(process.cwd(), "uploads");
+
 export function uploadsRoot(): string {
-  return process.env.UPLOADS_DIR ?? path.join(process.cwd(), "uploads");
+  return process.env.UPLOADS_DIR || DEFAULT_UPLOADS_DIR;
 }
 
 export function isImageField(value: string): value is ImageField {
@@ -69,7 +71,7 @@ export async function storeImage(options: {
   const relativeDir = path.join(String(options.hospitalId), options.serviceDate);
   const fileName = `${options.field}-${randomUUID()}.${extension}`;
 
-  const absoluteDir = path.join(uploadsRoot(), relativeDir);
+  const absoluteDir = path.join(process.cwd(), "uploads", relativeDir);
   await mkdir(absoluteDir, { recursive: true });
   await writeFile(
     path.join(absoluteDir, fileName),
@@ -81,9 +83,9 @@ export async function storeImage(options: {
 
 /** Evita que una ruta guardada apunte fuera de la carpeta de subidas. */
 export function resolveImagePath(relativePath: string): string | null {
-  const root = uploadsRoot();
-  const absolute = path.resolve(root, relativePath);
-  return absolute.startsWith(path.resolve(root)) ? absolute : null;
+  const root = path.resolve(process.cwd(), "uploads");
+  const absolute = path.resolve(process.cwd(), "uploads", relativePath);
+  return absolute.startsWith(root) ? absolute : null;
 }
 
 export async function readImage(

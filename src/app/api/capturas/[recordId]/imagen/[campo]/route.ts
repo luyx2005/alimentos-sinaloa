@@ -4,6 +4,8 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isImageField, readImage } from "@/lib/uploads";
 
+export const dynamic = "force-dynamic";
+
 /** Las fotos de la captura no son públicas: se sirven solo con sesión iniciada. */
 export async function GET(
   _request: Request,
