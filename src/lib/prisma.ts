@@ -7,10 +7,17 @@ const globalForPrisma = globalThis as unknown as {
   pool: Pool | undefined;
 };
 
+/** Next.js 16 marca esta fase mientras recopila rutas en `next build`. */
+function isProductionBuildPhase(): boolean {
+  return process.env.NEXT_PHASE === "phase-production-build";
+}
+
 function createClient() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
-    throw new Error("Falta la variable de entorno DATABASE_URL.");
+    throw new Error(
+      "Falta la variable de entorno DATABASE_URL. En Vercel: Settings → Environment Variables → DATABASE_URL (Production y Preview), luego Redeploy.",
+    );
   }
 
   const pool =
@@ -35,12 +42,18 @@ function getClient(): PrismaClient {
 }
 
 /**
- * Proxy perezoso: Next.js importa este módulo al recolectar páginas en el build.
- * Instanciar Prisma en ese momento exige DATABASE_URL y tumba el deploy en Vercel
- * si la variable aún no está (o si la ruta no va a consultar la base).
+ * Prisma Client es “thenable” (`prisma.then`). Next, al recolectar páginas,
+ * toca esa propiedad y el Proxy anterior abría la conexión en el build.
+ * Sin DATABASE_URL eso tumba Vercel. Durante el build no se instancia nada.
  */
 export const prisma = new Proxy({} as PrismaClient, {
   get(_target, prop, receiver) {
+    if (prop === "then" || prop === "catch" || prop === "finally") {
+      return undefined;
+    }
+    if (isProductionBuildPhase() && !process.env.DATABASE_URL) {
+      return undefined;
+    }
     const client = getClient();
     const value = Reflect.get(client, prop, receiver);
     return typeof value === "function" ? value.bind(client) : value;

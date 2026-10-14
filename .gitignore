@@ -45,3 +45,6 @@ next-env.d.ts
 
 # imagenes subidas en la captura
 /uploads/
+
+# Neon CLI context (org/project/branch ids)
+.neon
