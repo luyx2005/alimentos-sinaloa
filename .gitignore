@@ -41,7 +41,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/src/generated/prisma
+# El cliente de Prisma se versiona para que `next build` en Vercel no dependa
+# de que postinstall haya corrido (la caché de node_modules a veces lo salta).
 
 # imagenes subidas en la captura
 /uploads/

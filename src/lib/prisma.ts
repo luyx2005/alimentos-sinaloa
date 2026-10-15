@@ -9,7 +9,10 @@ const globalForPrisma = globalThis as unknown as {
 
 /** Next.js 16 marca esta fase mientras recopila rutas en `next build`. */
 function isProductionBuildPhase(): boolean {
-  return process.env.NEXT_PHASE === "phase-production-build";
+  return (
+    process.env.NEXT_PHASE === "phase-production-build" ||
+    process.env.NEXT_PHASE === "phase-export"
+  );
 }
 
 function createClient() {
@@ -51,7 +54,9 @@ export const prisma = new Proxy({} as PrismaClient, {
     if (prop === "then" || prop === "catch" || prop === "finally") {
       return undefined;
     }
-    if (isProductionBuildPhase() && !process.env.DATABASE_URL) {
+    // En el build nunca se abre Postgres: Next toca el export al recolectar
+    // rutas aunque la página sea force-dynamic. La app real corre en runtime.
+    if (isProductionBuildPhase()) {
       return undefined;
     }
     const client = getClient();

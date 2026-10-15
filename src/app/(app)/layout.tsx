@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { AppNav } from "@/components/app-nav";
 import { ROLE_LABELS, destroySession, requireSession } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const session = await requireSession();
 
