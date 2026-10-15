@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { SignJWT } from "jose";
 import bcrypt from "bcryptjs";
@@ -65,6 +66,7 @@ export async function destroySession(): Promise<void> {
 }
 
 export async function getSession(): Promise<SessionUser | null> {
+  await connection();
   const store = await cookies();
   return verifySessionToken(store.get(SESSION_COOKIE)?.value);
 }
