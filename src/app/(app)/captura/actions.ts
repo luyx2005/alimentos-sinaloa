@@ -180,7 +180,12 @@ export async function saveRecord(formData: FormData): Promise<SaveRecordResult> 
         message: "Ya existe una captura para este hospital y fecha.",
       };
     }
-    throw error;
+    console.error("saveRecord", error);
+    return {
+      ok: false,
+      message:
+        "No se pudo guardar la captura. Si subiste una foto, prueba con una imagen más ligera (JPG) e inténtalo de nuevo.",
+    };
   }
 }
 
