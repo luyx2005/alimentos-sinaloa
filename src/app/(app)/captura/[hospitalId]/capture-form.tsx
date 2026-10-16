@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { computeTotals, formatCurrency, formatNumber } from "@/lib/calc";
+import { compressImage, isAcceptedImageFile } from "@/lib/compress-image";
 import type { HospitalDTO, RecordDTO } from "@/lib/data";
 import type { ImageField } from "@/lib/uploads";
 
@@ -91,7 +92,7 @@ const SERVICES = [
   image: ImageField;
 }[];
 
-const ACCEPTED_IMAGES = "image/jpeg,image/png,image/webp,image/heic";
+const ACCEPTED_IMAGES = "image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif";
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
 function toFormValues(record: RecordDTO | null): FormValues {
@@ -229,7 +230,16 @@ export function CaptureForm({
     for (const [field, file] of Object.entries(images)) formData.set(field, file);
 
     startTransition(async () => {
-      const result = await saveRecord(formData);
+      let result;
+      try {
+        result = await saveRecord(formData);
+      } catch (error) {
+        console.error(error);
+        toast.error(
+          "No se pudo guardar. Si la foto es muy pesada, elige otra más ligera o vuelve a tomarla.",
+        );
+        return;
+      }
       if (result.ok) {
         toast.success(result.message ?? "Captura guardada.");
         router.push(backHref);
@@ -480,7 +490,7 @@ function PhotoField({
         onChange={(event) => {
           const selected = event.target.files?.[0] ?? null;
           if (!selected) return;
-          if (!ACCEPTED_IMAGES.split(",").includes(selected.type)) {
+          if (!isAcceptedImageFile(selected)) {
             toast.error("La foto debe ser JPG, PNG, WEBP o HEIC.");
             event.target.value = "";
             return;
@@ -490,7 +500,14 @@ function PhotoField({
             event.target.value = "";
             return;
           }
-          onSelect(selected);
+          void (async () => {
+            try {
+              const compressed = await compressImage(selected);
+              onSelect(compressed);
+            } catch {
+              onSelect(selected);
+            }
+          })();
         }}
       />
 
